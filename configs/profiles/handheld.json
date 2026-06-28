@@ -1,0 +1,25 @@
+{
+  "name": "Handheld (Steam Deck-like)",
+  "description": "PC portable gaming type Steam Deck : gamescope, controllers, DeckyLoader",
+  "icon": "gamepad",
+  "apt": [
+    { "name": "steam", "description": "Plateforme de jeux Steam" },
+    { "name": "gamescope", "description": "Compositeur Wayland (session SteamOS-like)" },
+    { "name": "gamemode", "description": "Optimiseur de performances gaming" },
+    { "name": "mangohud", "description": "Overlay FPS/CPU/GPU" },
+    { "name": "goverlay", "description": "Interface graphique MangoHud" }
+  ],
+  "flatpak": [
+    { "app": "com.heroicgameslauncher.hgl", "description": "Launcher Epic Games et GOG (Heroic)" },
+    { "app": "com.usebottles.bottles", "description": "Gestionnaire Wine/Proton (Bottles)" },
+    { "app": "page.kramo.Cartridges", "description": "Lanceur de jeux unifie" }
+  ],
+  "external": [
+    {
+      "name": "DeckyLoader (manuel)",
+      "description": "Installation officielle DeckyLoader pour plugins Steam Deck (curl direct depuis SteamDeckHomebrew)",
+      "cmd": "curl -L https://github.com/SteamDeckHomebrew/decky-installer/releases/latest/download/decky_installer.desktop -o ~/Desktop/decky_installer.desktop && chmod +x ~/Desktop/decky_installer.desktop && echo 'DeckyLoader installer place sur le bureau — double-cliquez pour lancer.'"
+    }
+  ],
+  "remove": []
+}

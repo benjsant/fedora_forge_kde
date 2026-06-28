@@ -1,0 +1,24 @@
+{
+  "name": "Docker & Virtualisation",
+  "description": "Docker CE et gestionnaire de machines virtuelles KVM/QEMU",
+  "icon": "docker",
+  "apt": [
+    { "name": "virt-manager", "description": "Gestionnaire de machines virtuelles (KVM/QEMU)" },
+    { "name": "qemu-kvm", "description": "Hyperviseur KVM" },
+    { "name": "libvirt", "description": "Bibliotheque et daemon de virtualisation" }
+  ],
+  "flatpak": [],
+  "external": [
+    {
+      "name": "KVM/libvirt (activation + groupes)",
+      "description": "Active le daemon libvirt, configure le socket et ajoute l'utilisateur aux groupes",
+      "cmd": "sudo bash -c 'systemctl enable --now libvirtd && sed -i \"s/^#unix_sock_group/unix_sock_group/\" /etc/libvirt/libvirtd.conf && sed -i \"s/^#unix_sock_rw_perms/unix_sock_rw_perms/\" /etc/libvirt/libvirtd.conf && systemctl restart libvirtd && usermod -aG libvirt $SUDO_USER && usermod -aG kvm $SUDO_USER'"
+    },
+    {
+      "name": "Docker CE",
+      "description": "Moteur de conteneurs Docker (depot officiel docker.com)",
+      "cmd": "sudo bash -c 'curl -sSLo /etc/yum.repos.d/docker-ce.repo https://download.docker.com/linux/fedora/docker-ce.repo && dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin && systemctl enable --now docker && usermod -aG docker $SUDO_USER'"
+    }
+  ],
+  "remove": []
+}

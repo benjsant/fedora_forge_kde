@@ -1,0 +1,21 @@
+{
+  "name": "NVIDIA GPU",
+  "description": "Pilotes et outils pour cartes graphiques NVIDIA",
+  "icon": "gpu",
+  "apt": [
+    { "name": "mesa-vulkan-drivers", "description": "Pilotes Vulkan Mesa" },
+    { "name": "vulkan-loader", "description": "Loader Vulkan" },
+    { "name": "vulkan-tools", "description": "Outils Vulkan (vulkaninfo, vkcube)" },
+    { "name": "mesa-demos", "description": "Utilitaires Mesa (glxinfo, glxgears)" },
+    { "name": "nvtop", "description": "Moniteur GPU NVIDIA interactif" }
+  ],
+  "flatpak": [],
+  "external": [
+    {
+      "name": "Pilote NVIDIA proprietaire (akmod)",
+      "description": "Installe akmod-nvidia + CUDA depuis RPM Fusion nonfree. Active RPM Fusion via le wizard Fedora au prealable. Le module se compile au prochain demarrage.",
+      "cmd": "if dnf repolist --enabled rpmfusion-nonfree 2>/dev/null | grep -q rpmfusion-nonfree; then sudo dnf install -y akmod-nvidia xorg-x11-drv-nvidia-cuda; else echo 'RPM Fusion requis : activez-le via le wizard Fedora avant le pilote NVIDIA' && exit 1; fi"
+    }
+  ],
+  "remove": []
+}

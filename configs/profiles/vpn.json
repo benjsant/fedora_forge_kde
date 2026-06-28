@@ -1,0 +1,25 @@
+{
+  "name": "VPN & Reseau",
+  "description": "Plugins VPN pour NetworkManager avec integration KDE Plasma",
+  "icon": "shield",
+  "apt": [
+    { "name": "NetworkManager-l2tp", "description": "Backend VPN L2TP/IPsec" },
+    { "name": "plasma-nm-l2tp", "description": "Integration KDE Plasma pour L2TP" },
+    { "name": "NetworkManager-openconnect", "description": "Backend VPN OpenConnect (Cisco AnyConnect)" },
+    { "name": "plasma-nm-openconnect", "description": "Integration KDE Plasma pour OpenConnect" },
+    { "name": "NetworkManager-openvpn", "description": "Backend VPN OpenVPN" },
+    { "name": "plasma-nm-openvpn", "description": "Integration KDE Plasma pour OpenVPN" },
+    { "name": "NetworkManager-ssh", "description": "Backend tunnel VPN SSH" },
+    { "name": "plasma-nm-ssh", "description": "Integration KDE Plasma pour SSH VPN" },
+    { "name": "NetworkManager-strongswan", "description": "Backend VPN IKEv2/IPsec (strongSwan)" },
+    { "name": "plasma-nm-strongswan", "description": "Integration KDE Plasma pour strongSwan" },
+    { "name": "NetworkManager-vpnc", "description": "Backend VPN Cisco (VPNC)" },
+    { "name": "plasma-nm-vpnc", "description": "Integration KDE Plasma pour VPNC" },
+    { "name": "NetworkManager-fortisslvpn", "description": "Backend VPN FortiSSL (Fortinet)" },
+    { "name": "plasma-nm-fortisslvpn", "description": "Integration KDE Plasma pour FortiSSL" },
+    { "name": "iw", "description": "Outils diagnostic reseau sans-fil" }
+  ],
+  "flatpak": [],
+  "external": [],
+  "remove": []
+}

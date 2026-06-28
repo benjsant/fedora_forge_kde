@@ -1,0 +1,9 @@
+{
+  "name": "Configuration Breeze Dark",
+  "description": "Theme sombre par defaut de KDE Plasma, coherent et elegant.",
+  "gtk_theme": "Breeze",
+  "icon_theme": "breeze-dark",
+  "cursor_theme": "breeze_cursors",
+  "plasma_theme": "default",
+  "optional_themes": []
+}

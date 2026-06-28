@@ -1,0 +1,7 @@
+{
+  "flatpaks": [
+    { "source": "flathub", "app": "com.github.tchx84.Flatseal", "description": "Manage Flatpak permissions" },
+    { "source": "flathub", "app": "org.onlyoffice.desktopeditors", "description": "OnlyOffice Desktop Editors" },
+    { "source": "flathub", "app": "md.obsidian.Obsidian", "description": "Knowledge base with Markdown" }
+  ]
+}

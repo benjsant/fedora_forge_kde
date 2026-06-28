@@ -1,0 +1,7 @@
+{
+  "packages": [
+    { "name": "kmahjongg", "description": "Mahjongg game" },
+    { "name": "kmines", "description": "Minesweeper game" },
+    { "name": "kpat", "description": "Patience card game" }
+  ]
+}

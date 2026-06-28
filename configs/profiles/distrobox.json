@@ -1,0 +1,14 @@
+{
+  "name": "Distrobox",
+  "description": "Distrobox avec Podman — conteneurs integres au bureau Linux",
+  "icon": "box",
+  "apt": [
+    { "name": "podman", "description": "Moteur de conteneurs sans daemon (utilise par Distrobox)" },
+    { "name": "distrobox", "description": "Conteneurs integres au bureau (acces GUI, home, audio)" }
+  ],
+  "flatpak": [
+    { "app": "io.github.dvlv.boxbuddyrs", "description": "Interface graphique pour gerer les conteneurs Distrobox" }
+  ],
+  "external": [],
+  "remove": []
+}

@@ -1,0 +1,26 @@
+{
+  "name": "Multimedia",
+  "description": "Lecteurs media, creation video/audio et retouche image",
+  "icon": "film",
+  "apt": [
+    { "name": "mpv", "description": "Lecteur multimedia puissant et leger" },
+    { "name": "celluloid", "description": "Interface GTK moderne pour mpv" },
+    { "name": "yt-dlp", "description": "Telechargeur YouTube et 1000+ plateformes" },
+    { "name": "ffmpegthumbnailer", "description": "Miniatures video dans Dolphin" },
+    { "name": "elisa", "description": "Lecteur musical KDE elegant" },
+    { "name": "pavucontrol", "description": "Controle de volume avance PipeWire/PulseAudio" },
+    { "name": "krita", "description": "Peinture et dessin numerique (KDE natif)" },
+    { "name": "kdenlive", "description": "Montage video non lineaire (KDE natif)" },
+    { "name": "audacity", "description": "Editeur audio multipiste" },
+    { "name": "HandBrake-gui", "description": "Encodage et conversion video" },
+    { "name": "inkscape", "description": "Editeur graphique vectoriel SVG" },
+    { "name": "mkvtoolnix-gui", "description": "Manipulation MKV : extraction/mux pistes audio, sous-titres" },
+    { "name": "vlc", "description": "Lecteur multimedia VLC (couverture codecs maximale)" }
+  ],
+  "flatpak": [
+    { "app": "com.obsproject.Studio", "description": "Enregistrement et streaming video (OBS Studio)" },
+    { "app": "org.gimp.GIMP", "description": "Editeur d'images professionnel GIMP" }
+  ],
+  "external": [],
+  "remove": []
+}
