@@ -215,19 +215,26 @@ def codecs_install():
         return jsonify({"success": True, "already_installed": True,
                         "message": "Codecs deja installes", **status})
 
-    # 1. ffmpeg non libre + plugins. --allowerasing pour le swap ffmpeg-free -> ffmpeg-libs.
+    # Etape 1 (critique) : ffmpeg non libre + plugins GStreamer. --allowerasing
+    # pour le swap ffmpeg-free -> ffmpeg-libs. C'est ce qui apporte les codecs.
     log_info("Installation des codecs multimedia (ffmpeg + GStreamer)...")
-    steps = [
-        ["dnf", "install", "-y", "--allowerasing", *_CODEC_PACKAGES],
+    if _stream_sudo(["dnf", "install", "-y", "--allowerasing", *_CODEC_PACKAGES],
+                    timeout=_CODEC_TIMEOUT) != 0:
+        log_error("Echec installation des codecs (ffmpeg + GStreamer)")
+        return jsonify({"success": False,
+                        "error": "Echec de l'installation des codecs multimedia"}), 500
+
+    # Etapes 2-3 (best effort) : mise a jour des groupes vers les variantes
+    # freeworld. Non bloquantes : sur un systeme ou le groupe n'est pas installe,
+    # ces commandes peuvent renvoyer non-zero sans que les codecs soient absents.
+    group_steps = [
         ["dnf", "group", "upgrade", "-y", "multimedia",
          "--setopt=install_weak_deps=False", "--exclude=PackageKit-gstreamer-plugin"],
         ["dnf", "group", "upgrade", "-y", "sound-and-video"],
     ]
-    for cmd in steps:
+    for cmd in group_steps:
         if _stream_sudo(cmd, timeout=_CODEC_TIMEOUT) != 0:
-            log_error("Echec installation des codecs")
-            return jsonify({"success": False,
-                            "error": "Echec de l'installation des codecs multimedia"}), 500
+            log_warn(f"Mise a jour de groupe non critique echouee : {' '.join(cmd[3:])}")
 
     log_success("Codecs multimedia installes")
     return jsonify({"success": True, "message": "Codecs installes", **_codecs_status()})

@@ -211,6 +211,25 @@ def test_codecs_install_stops_on_failure(client, monkeypatch):
     assert len(calls) == 1  # on s'arrete a la premiere erreur
 
 
+def test_codecs_install_group_failure_non_fatal(client, monkeypatch):
+    from routes import fedora_wizards as fw
+    monkeypatch.setattr(fw, "_repo_enabled", lambda repo: True)
+    monkeypatch.setattr(fw, "_pkg_installed", lambda pkg: False)
+    calls = []
+
+    def _stream(cmd, timeout=None):
+        calls.append(cmd)
+        # L'install ffmpeg reussit, mais les 'group upgrade' echouent.
+        return 0 if "install" in cmd else 1
+    monkeypatch.setattr(fw, "_stream_sudo", _stream)
+
+    r = client.post("/api/fedora/codecs/install")
+    # Les etapes de groupe sont best-effort : succes malgre leur echec.
+    assert r.status_code == 200
+    assert r.get_json()["success"] is True
+    assert len(calls) == 3  # install + 2 group upgrade tentes
+
+
 # --- Wizard NVIDIA ---
 
 def test_nvidia_status_shape(client, monkeypatch):

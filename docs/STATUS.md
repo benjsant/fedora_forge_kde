@@ -59,6 +59,10 @@ Etat tests : ~192 pytest verts, ruff clean.
    `mkvtoolnix-gui`, `goverlay`, `ffmpegthumbnailer`, `lazygit`, `tealdeer`, `corectrl`.
    S'ils manquent sur Fedora : les ajouter a `_RPMFUSION_ONLY` dans [routes/profiles.py](../routes/profiles.py)
    ou basculer en Flatpak/COPR.
+2b. **`scx-scheds` (wizard sched-ext)** : confirmer qu'il est dans les depots
+   officiels Fedora 44. Sur la machine de dev Nobara il venait du repo tiers `terra`.
+   Le wizard echoue proprement s'il est introuvable, mais si stock Fedora ne l'a pas,
+   prevoir un COPR. Le harnais le verifie (section sched-ext, repoquery).
 3. Optionnel : wizard ROCm (calcul AMD pour l'IA ; support RRDNA2/680M faible, basse priorite).
 4. Cosmetique : unifier le nommage `fedorakdeforge` (lockfile/backups) vs `fedoraforgekde`
    (sudoers/launcher).
