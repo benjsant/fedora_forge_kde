@@ -1,0 +1,19 @@
+{
+  "name": "HTPC (Steam Big Picture)",
+  "description": "PC salon : Steam HTPC, Kodi, controllers et auto-update boot",
+  "icon": "gamepad",
+  "apt": [
+    { "name": "steam", "description": "Plateforme de jeux Steam" },
+    { "name": "gamemode", "description": "Optimiseur de performances gaming" },
+    { "name": "mangohud", "description": "Overlay FPS/CPU/GPU" },
+    { "name": "kodi", "description": "Mediacenter HTPC" },
+    { "name": "kodi-inputstream-adaptive", "description": "Streaming adaptatif pour Kodi" },
+    { "name": "gamescope", "description": "Compositeur micro Wayland (mode session SteamOS-like)" }
+  ],
+  "flatpak": [
+    { "app": "com.heroicgameslauncher.hgl", "description": "Launcher Epic Games et GOG (Heroic)" },
+    { "app": "net.retrodeck.retrodeck", "description": "Suite d'emulation tout-en-un (RetroDECK)" }
+  ],
+  "external": [],
+  "remove": []
+}

@@ -1,0 +1,28 @@
+{
+  "themes": [
+    {
+      "name": "breeze_cursors",
+      "name_to_use": "breeze_cursors",
+      "url": "",
+      "cmd_user": "",
+      "cmd_root": "",
+      "description": "Default KDE Breeze cursor theme"
+    },
+    {
+      "name": "Bibata-Modern-Classic",
+      "name_to_use": "Bibata-Modern-Classic",
+      "url": "https://github.com/ful1e5/Bibata_Cursor.git",
+      "cmd_user": "cp -r bitmaps/Bibata-Modern-Classic ~/.icons/Bibata-Modern-Classic",
+      "cmd_root": "sudo cp -r bitmaps/Bibata-Modern-Classic /usr/share/icons/Bibata-Modern-Classic",
+      "description": "Modern material-based cursor"
+    },
+    {
+      "name": "phinger-cursors",
+      "name_to_use": "phinger-cursors-dark",
+      "url": "https://github.com/phisch/phinger-cursors.git",
+      "cmd_user": "mkdir -p ~/.icons && cp -r bin/phinger-cursors-light bin/phinger-cursors-dark ~/.icons/",
+      "cmd_root": "sudo cp -r bin/phinger-cursors-light bin/phinger-cursors-dark /usr/share/icons/",
+      "description": "Curseurs animes modernes (variantes light + dark)"
+    }
+  ]
+}

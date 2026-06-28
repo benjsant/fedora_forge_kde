@@ -1,0 +1,28 @@
+{
+  "themes": [
+    {
+      "name": "KvDark",
+      "name_to_use": "KvDark",
+      "url": "",
+      "cmd_user": "",
+      "cmd_root": "",
+      "description": "Theme Kvantum sombre par defaut (livre avec le paquet kvantum)"
+    },
+    {
+      "name": "Catppuccin-Kvantum",
+      "name_to_use": "Catppuccin-Mocha-Lavender",
+      "url": "https://github.com/catppuccin/kvantum.git",
+      "cmd_user": "mkdir -p ~/.config/Kvantum && cp -r src/Catppuccin-Mocha-Lavender ~/.config/Kvantum/",
+      "cmd_root": "sudo mkdir -p /usr/share/Kvantum && sudo cp -r src/Catppuccin-Mocha-Lavender /usr/share/Kvantum/",
+      "description": "Catppuccin Mocha Lavender (variante violette) pour les apps Qt"
+    },
+    {
+      "name": "Layan-Kvantum",
+      "name_to_use": "Layan",
+      "url": "https://github.com/vinceliuice/Layan-kde.git",
+      "cmd_user": "mkdir -p ~/.config/Kvantum && cp -r Kvantum/Layan ~/.config/Kvantum/",
+      "cmd_root": "sudo mkdir -p /usr/share/Kvantum && sudo cp -r Kvantum/Layan /usr/share/Kvantum/",
+      "description": "Layan : theme Kvantum Material Design (pendant Qt du GTK)"
+    }
+  ]
+}

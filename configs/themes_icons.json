@@ -1,0 +1,20 @@
+{
+  "themes": [
+    {
+      "name": "breeze",
+      "name_to_use": "breeze",
+      "url": "",
+      "cmd_user": "",
+      "cmd_root": "",
+      "description": "Default KDE Breeze icon theme"
+    },
+    {
+      "name": "Tela-icon-theme",
+      "name_to_use": "Tela-dark",
+      "url": "https://github.com/vinceliuice/Tela-icon-theme.git",
+      "cmd_user": "./install.sh -a -d ~/.local/share/icons",
+      "cmd_root": "sudo ./install.sh -a -d /usr/share/icons",
+      "description": "Flat icon theme with many variants"
+    }
+  ]
+}

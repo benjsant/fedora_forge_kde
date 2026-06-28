@@ -1,0 +1,32 @@
+{
+  "name": "AMD GPU",
+  "description": "Pilotes et outils pour cartes graphiques AMD (RDNA/RDNA2/RDNA3)",
+  "icon": "cpu",
+  "apt": [
+    { "name": "mesa-vulkan-drivers", "description": "Pilotes Vulkan Mesa RADV (base Fedora)" },
+    { "name": "mesa-vulkan-drivers.i686", "description": "Pilotes Vulkan Mesa 32-bit" },
+    { "name": "mesa-va-drivers", "description": "Decodage video VA-API (base, codecs libres)" },
+    { "name": "mesa-vdpau-drivers", "description": "Decodage video VDPAU (base, codecs libres)" },
+    { "name": "vulkan-loader", "description": "Loader Vulkan" },
+    { "name": "vulkan-loader.i686", "description": "Loader Vulkan 32-bit" },
+    { "name": "vulkan-tools", "description": "Outils Vulkan (vulkaninfo)" },
+    { "name": "mesa-demos", "description": "Utilitaires Mesa (glxinfo, glxgears)" },
+    { "name": "mesa-libEGL.i686", "description": "Mesa EGL 32-bit" },
+    { "name": "mesa-libGL.i686", "description": "Mesa GL 32-bit" },
+    { "name": "libdrm", "description": "Lib DRM" },
+    { "name": "linux-firmware", "description": "Firmware GPU AMD" },
+    { "name": "libva-utils", "description": "Diagnostic acceleration video VA-API" },
+    { "name": "vdpauinfo", "description": "Diagnostic acceleration video VDPAU" },
+    { "name": "radeontop", "description": "Moniteur d'utilisation GPU AMD" },
+    { "name": "corectrl", "description": "Controle GPU/CPU (frequences, ventilateurs)" }
+  ],
+  "flatpak": [],
+  "external": [
+    {
+      "name": "Variantes mesa-freeworld (codecs proprietaires)",
+      "description": "Remplace les pilotes VA-API/VDPAU/Vulkan Mesa par les variantes freeworld de RPM Fusion (decodage h264/h265/AV1). Active RPM Fusion via le wizard Fedora au prealable.",
+      "cmd": "if dnf repolist --enabled rpmfusion-free 2>/dev/null | grep -q rpmfusion-free; then sudo dnf swap -y mesa-va-drivers mesa-va-drivers-freeworld --allowerasing && sudo dnf swap -y mesa-vdpau-drivers mesa-vdpau-drivers-freeworld --allowerasing && sudo dnf swap -y mesa-va-drivers.i686 mesa-va-drivers-freeworld.i686 --allowerasing && sudo dnf swap -y mesa-vdpau-drivers.i686 mesa-vdpau-drivers-freeworld.i686 --allowerasing && sudo dnf install -y mesa-vulkan-drivers-freeworld mesa-vulkan-drivers-freeworld.i686; else echo 'RPM Fusion requis : activez-le via le wizard Fedora avant les variantes freeworld' && exit 1; fi"
+    }
+  ],
+  "remove": []
+}

@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FedoraForgeKDE</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'><defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'><stop offset='0%25' stop-color='%239b59b6'/><stop offset='100%25' stop-color='%236c2d8e'/></linearGradient></defs><rect x='4' y='4' width='120' height='120' rx='22' fill='url(%23g)'/><path d='M88 28a18 18 0 0 0-16.6 24.9L34 90.3a8 8 0 0 0 0 11.3l2.4 2.4a8 8 0 0 0 11.3 0l37.4-37.4A18 18 0 1 0 88 28zm0 26a8 8 0 1 1 0-16 8 8 0 0 1 0 16z' fill='%23f5f5f5'/></svg>">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script defer src="https://unpkg.com/alpinejs@3.13.10/dist/cdn.min.js"></script>
+</head>
+<body x-data="forge()" x-init="init()">
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                <div class="header-logo">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="52" height="52" aria-hidden="true">
+                        <defs>
+                            <linearGradient id="hbg" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="#9b59b6"/>
+                                <stop offset="100%" stop-color="#6c2d8e"/>
+                            </linearGradient>
+                        </defs>
+                        <rect x="4" y="4" width="120" height="120" rx="22" ry="22" fill="url(#hbg)"/>
+                        <path d="M88 28a18 18 0 0 0-16.6 24.9L34 90.3a8 8 0 0 0 0 11.3l2.4 2.4a8 8 0 0 0 11.3 0l37.4-37.4A18 18 0 1 0 88 28zm0 26a8 8 0 1 1 0-16 8 8 0 0 1 0 16z"
+                              fill="#f0e6fa" stroke="#3d1a5e" stroke-width="1.5" stroke-linejoin="round"/>
+                        <text x="64" y="118" text-anchor="middle"
+                              font-family="Inter, Noto Sans, sans-serif" font-size="14" font-weight="600"
+                              fill="#d7bde2" letter-spacing="1">FORGE</text>
+                    </svg>
+                    <div>
+                        <h1>FedoraForgeKDE</h1>
+                        <p>Installation automatisee pour Fedora KDE</p>
+                    </div>
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Basculer clair/sombre">
+                    <span id="themeIcon">☀️</span>
+                </button>
+                <button class="btn-small" onclick="quitApp()" title="Quitter FedoraForgeKDE"
+                        style="border-color: var(--danger); color: var(--danger); font-size: 0.85em;">
+                    Quitter
+                </button>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <template x-for="item in checkItems" :key="item.id">
+                <div class="status-item" :class="item.cls">
+                    <h3 x-text="item.label"></h3>
+                    <div class="value" x-text="item.value"></div>
+                </div>
+            </template>
+            <div class="status-item" x-show="checks.power" :class="powerCls" x-cloak>
+                <h3>Alimentation</h3>
+                <div class="value" x-text="powerValue"></div>
+            </div>
+        </div>
+
+        <div class="tools-warning" id="toolsWarning" x-show="missingTools.length > 0" x-cloak>
+            <span x-text="'Outils manquants : ' + missingTools.join(', ') + ' — certaines fonctions seront indisponibles.'"></span>
+        </div>
+        <div class="battery-warning" id="batteryWarning" x-show="checks.power && checks.power.on_battery" x-cloak>
+            <span x-text="batteryMessage"></span>
+        </div>
+
+        <!-- Identite systeme -->
+        <div class="system-identity" x-show="systemInfo" x-cloak>
+            <div class="system-identity-row">
+                <span class="identity-pill" x-text="osLabel" :title="systemInfo?.os?.pretty"></span>
+                <span class="identity-pill" x-text="kernelLabel" :title="systemInfo?.kernel?.release"></span>
+                <span class="identity-pill" x-text="plasmaLabel"></span>
+                <span class="identity-pill" x-text="mesaLabel"></span>
+                <span class="identity-pill" x-text="sessionLabel"></span>
+            </div>
+            <div class="system-identity-row">
+                <span class="identity-pill identity-pill-sec" x-text="lsmLabel" :title="(systemInfo?.security?.lsm || []).join(',')"></span>
+                <span class="identity-pill identity-pill-sec" x-text="selinuxLabel"></span>
+                <span class="identity-pill identity-pill-sec" x-text="sysctlLabel" :title="sysctlTooltip"></span>
+                <span class="identity-pill identity-pill-sec" x-text="fsLabel" :title="fsTooltip"></span>
+                <span class="identity-pill identity-pill-sec" x-text="zramLabel"></span>
+            </div>
+        </div>
+
+        <div class="task-bar" id="taskBar" style="display: none;">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                <div class="task-status" id="taskStatus">Pret</div>
+                <button class="btn-small" id="btnCancelTask" onclick="cancelTask()"
+                        style="display:none; border-color: var(--danger); color: var(--danger);">
+                    Annuler
+                </button>
+            </div>
+            <div class="progress-bar" id="progressBar" style="display: none;">
+                <div class="progress-fill" id="progressFill" style="width: 0%">0%</div>
+            </div>
+        </div>
+
+        <div class="profiles-section">
+            <div class="profiles-header">
+                <h2>Profils d'installation</h2>
+                <div class="profiles-actions">
+                    <button class="btn-small" onclick="selectAllProfiles()">Tout cocher</button>
+                    <button class="btn-small" onclick="deselectAllProfiles()">Tout decocher</button>
+                    <button class="btn-small" onclick="dryRunProfiles()">Apercu</button>
+                    <button class="btn-small" onclick="preflightProfiles()" title="Detecte les conflits avant l'installation">Pre-flight</button>
+                    <button class="btn-small" onclick="exportProfiles()">Exporter</button>
+                    <button class="btn-small" onclick="importProfiles()">Importer</button>
+                </div>
+            </div>
+            <div class="profiles-grid" id="profilesGrid">
+                <div style="color: var(--text-muted);">Chargement des profils...</div>
+            </div>
+            <label id="snapshotToggleWrap" style="display: none; align-items: center; gap: 8px; margin-top: 12px; font-size: 0.88em; color: var(--text-muted); cursor: pointer;">
+                <input type="checkbox" id="snapshotToggle" />
+                Snapshot timeshift avant l'installation (recommande pour rollback rapide)
+            </label>
+            <button class="install-profiles-btn" id="btnInstallProfiles" onclick="installProfiles()" disabled>
+                Installer les profils selectionnes (tous les paquets)
+                <span class="btn-sub" id="profilesBtnSub">Aucun profil selectionne</span>
+            </button>
+            <p style="font-size: 0.8em; color: var(--text-muted); margin-top: 8px; text-align: center;">
+                Pour choisir paquet par paquet : cliquer "Detail" sur un profil, cocher/decocher, puis "Installer la selection".
+            </p>
+        </div>
+
+        <!-- Wizards Fedora -->
+        <div class="profiles-section" id="fedoraWizardsSection">
+            <div class="profiles-header">
+                <h2>Wizards Fedora</h2>
+                <button class="btn-small" onclick="loadRpmFusion()">Rafraichir</button>
+            </div>
+            <p style="font-size: 0.85em; color: var(--text-muted); margin-bottom: 12px;">
+                Fedora KDE part d'une base "vanilla". RPM Fusion est le prerequis des codecs multimedia, des pilotes NVIDIA et des variantes mesa-freeworld.
+            </p>
+            <div class="profile-card" style="cursor: default;">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+                    <div>
+                        <h3 style="margin: 0;">RPM Fusion <span id="rpmFusionBadge" style="font-size: 0.75em; font-weight: normal; color: var(--text-muted);"></span></h3>
+                        <p style="font-size: 0.82em; color: var(--text-muted); margin: 4px 0 0;">Depots free + nonfree (codecs, pilotes, paquets non libres).</p>
+                    </div>
+                    <button class="btn-small" id="btnRpmFusionEnable" onclick="rpmFusionEnable()"
+                            style="border-color: var(--success); color: var(--success);">Activer</button>
+                </div>
+                <p id="rpmFusionWarn" style="display: none; font-size: 0.78em; color: var(--warning, #b8860b); margin: 10px 0 0;"></p>
+            </div>
+            <div class="profile-card" style="cursor: default; margin-top: 10px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+                    <div>
+                        <h3 style="margin: 0;">Codecs multimedia <span id="codecsBadge" style="font-size: 0.75em; font-weight: normal; color: var(--text-muted);"></span></h3>
+                        <p style="font-size: 0.82em; color: var(--text-muted); margin: 4px 0 0;">ffmpeg complet + plugins GStreamer (h264/h265/AAC). Necessite RPM Fusion.</p>
+                    </div>
+                    <button class="btn-small" id="btnCodecsInstall" onclick="codecsInstall()"
+                            style="border-color: var(--success); color: var(--success);">Installer</button>
+                </div>
+            </div>
+            <div class="profile-card" id="nvidiaCard" style="cursor: default; margin-top: 10px; display: none;">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+                    <div>
+                        <h3 style="margin: 0;">Pilote NVIDIA <span id="nvidiaBadge" style="font-size: 0.75em; font-weight: normal; color: var(--text-muted);"></span></h3>
+                        <p style="font-size: 0.82em; color: var(--text-muted); margin: 4px 0 0;">akmod-nvidia + CUDA (proprietaire). Necessite RPM Fusion.</p>
+                    </div>
+                    <button class="btn-small" id="btnNvidiaInstall" onclick="nvidiaInstall()"
+                            style="border-color: var(--success); color: var(--success);">Installer</button>
+                </div>
+                <p id="nvidiaWarn" style="display: none; font-size: 0.78em; color: var(--warning, #b8860b); margin: 10px 0 0;"></p>
+            </div>
+            <div class="profile-card" style="cursor: default; margin-top: 10px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+                    <div>
+                        <h3 style="margin: 0;">Flathub <span id="flathubBadge" style="font-size: 0.75em; font-weight: normal; color: var(--text-muted);"></span></h3>
+                        <p style="font-size: 0.82em; color: var(--text-muted); margin: 4px 0 0;">Active le depot Flathub complet (Fedora le livre filtre par defaut).</p>
+                    </div>
+                    <button class="btn-small" id="btnFlathubEnable" onclick="flathubEnable()"
+                            style="border-color: var(--success); color: var(--success);">Activer</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Outils systeme Fedora KDE -->
+        <div class="profiles-section" id="systemToolsSection">
+            <div class="profiles-header">
+                <h2>Outils systeme</h2>
+                <button class="btn-small" onclick="loadSystemTools()">Rafraichir</button>
+            </div>
+            <p style="font-size: 0.85em; color: var(--text-muted); margin-bottom: 12px;">
+                Outils GUI standard de Fedora KDE (Discover, Parametres systeme, moniteur). Pour les pilotes, codecs et depots, utilisez les wizards Fedora ci-dessus.
+            </p>
+            <div id="systemToolsGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px;">
+                <div style="color: var(--text-muted);">Chargement...</div>
+            </div>
+        </div>
+
+        <!-- Paquets optionnels -->
+        <div class="profiles-section" id="optionalSection">
+            <div class="profiles-header">
+                <h2>Paquets optionnels</h2>
+                <div class="profiles-actions">
+                    <button class="btn-small" onclick="loadOptionalPackages()">Rafraichir</button>
+                </div>
+            </div>
+            <p style="font-size: 0.85em; color: var(--text-muted); margin-bottom: 12px;">
+                Paquets pratiques mais non essentiels : imprimantes HP, polices Microsoft, outils divers.
+            </p>
+            <div id="optionalGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; margin-bottom: 14px;">
+                <div style="color: var(--text-muted);">Chargement...</div>
+            </div>
+            <button class="install-profiles-btn" onclick="installOptional()" style="font-size: 1em; padding: 14px;">
+                Installer tous les paquets optionnels
+            </button>
+        </div>
+
+        <!-- Catalogue de themes -->
+        <div class="profiles-section" id="themeCatalogSection">
+            <div class="profiles-header">
+                <h2>Themes a installer</h2>
+                <div class="profiles-actions">
+                    <button class="btn-small" id="themeTabGtk"     onclick="switchThemeTab('gtk')"    style="border-color: var(--primary);">GTK</button>
+                    <button class="btn-small" id="themeTabIcon"    onclick="switchThemeTab('icon')">Icones</button>
+                    <button class="btn-small" id="themeTabCursor"  onclick="switchThemeTab('cursor')">Curseurs</button>
+                    <button class="btn-small" id="themeTabKvantum" onclick="switchThemeTab('kvantum')">Kvantum</button>
+                    <button class="btn-small" onclick="loadThemeCatalog()">Rafraichir catalogue</button>
+                    <button class="btn-small" onclick="reloadAllThemes()" style="border-color: var(--secondary); color: var(--secondary);">
+                        Recharger tous les themes
+                    </button>
+                </div>
+            </div>
+            <div style="display: flex; gap: 16px; align-items: center; margin: 10px 0; flex-wrap: wrap;">
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.88em; color: var(--text-muted);">
+                    <input type="checkbox" id="themeHideInstalled" onchange="renderThemeTab(_currentThemeTab)">
+                    Masquer les deja installes
+                </label>
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.88em; color: var(--text-muted);" title="Installe dans /usr/share (pour tous les utilisateurs et l'ecran de connexion) — necessite sudo">
+                    <input type="checkbox" id="themeSystemInstall" checked>
+                    Installation systeme (/usr/share) — recommande
+                </label>
+            </div>
+            <div id="themeCatalogGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-top: 4px;">
+                <div style="color: var(--text-muted);">Chargement...</div>
+            </div>
+        </div>
+
+        <div class="dconf-section" id="kdeSection">
+            <h2>Parametres du bureau</h2>
+            <p style="color: var(--text-muted); margin-bottom: 18px;">
+                Configurez l'apparence et les parametres du bureau. Appliques directement via kwriteconfig6.
+            </p>
+            <div class="dconf-grid" id="kdeGrid">
+                <div style="color: var(--text-muted);">Chargement des options...</div>
+            </div>
+            <div id="kdePreviewWrap" style="display: none;">
+                <h3 style="color: var(--dark); margin-bottom: 8px;">Apercu des modifications</h3>
+                <div class="dconf-preview" id="kdePreview"></div>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button class="install-profiles-btn" style="flex: 1;" onclick="applyKde()">
+                    Appliquer la configuration
+                </button>
+                <button class="btn-small" style="padding: 18px; font-size: 1em;" onclick="exportCurrentKde()">
+                    Exporter config KDE actuelle
+                </button>
+            </div>
+        </div>
+
+        <!-- Sauvegardes de la config KDE -->
+        <div class="profiles-section" id="kdeBackupSection">
+            <div class="profiles-header">
+                <h2>Sauvegardes config bureau</h2>
+                <button class="btn-small" onclick="loadKdeBackups()">Rafraichir</button>
+            </div>
+            <p style="font-size: 0.85em; color: var(--text-muted); margin-bottom: 12px;">
+                Sauvegarde les fichiers de config KDE (themes, raccourcis, panels, KWin, Kvantum, etc.).
+                Stocke dans <code>~/.local/share/fedoraforgekde/backups/</code>. Pratique avant d'experimenter.
+            </p>
+            <div style="display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap;">
+                <input type="text" id="backupLabel" placeholder="Etiquette optionnelle (ex: avant-experiences)"
+                       maxlength="32"
+                       style="flex: 1; min-width: 200px; padding: 10px 12px; border: 2px solid var(--border); border-radius: 8px; background: var(--card-bg); color: var(--text); font-size: 0.9em;">
+                <button class="install-profiles-btn" onclick="createKdeBackup()"
+                        style="flex: 0 0 auto; padding: 10px 24px; font-size: 0.95em; width: auto;">
+                    Creer une sauvegarde
+                </button>
+            </div>
+            <div id="kdeBackupsList">
+                <div style="color: var(--text-muted);">Chargement...</div>
+            </div>
+        </div>
+
+        <!-- Tweaks rapides : reset Plasma, services systemd, audio -->
+        <div class="profiles-section" id="tweaksSection">
+            <div class="profiles-header">
+                <h2>Tweaks rapides</h2>
+                <button class="btn-small" onclick="loadTweaks()">Rafraichir</button>
+            </div>
+
+            <!-- Reparation rapide -->
+            <div style="margin-bottom: 22px;">
+                <h3 style="color: var(--primary); margin-bottom: 6px; font-size: 1em;">Reparation rapide</h3>
+                <p style="font-size: 0.85em; color: var(--text-muted); margin-bottom: 10px;">
+                    Resout les bugs courants de Plasma (panel/widgets geles, miniatures cassees).
+                </p>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button class="btn-small" onclick="resetPlasma()" style="padding: 10px 16px;">
+                        Reinitialiser Plasma (kill + restart plasmashell)
+                    </button>
+                    <button class="btn-small" onclick="clearCaches()" style="padding: 10px 16px;">
+                        Vider les caches (~/.cache/*)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Services systemd -->
+            <div style="margin-bottom: 22px;">
+                <h3 style="color: var(--primary); margin-bottom: 6px; font-size: 1em;">Services systemd</h3>
+                <p style="font-size: 0.85em; color: var(--text-muted); margin-bottom: 10px;">
+                    Active/desactive au demarrage. Necessite le cache sudo (entretenu par le launcher).
+                </p>
+                <div id="servicesGrid" style="display: flex; flex-direction: column; gap: 8px;">
+                    <div style="color: var(--text-muted);">Chargement...</div>
+                </div>
+            </div>
+
+            <!-- Audio (PipeWire + Bluetooth) -->
+            <div>
+                <h3 style="color: var(--primary); margin-bottom: 6px; font-size: 1em;">Audio (PipeWire)</h3>
+                <p style="font-size: 0.85em; color: var(--text-muted); margin-bottom: 10px;">
+                    Sample rate et codecs Bluetooth premium (LDAC, aptX-HD, AAC).
+                </p>
+                <div id="audioControls">
+                    <div style="color: var(--text-muted);">Chargement...</div>
+                </div>
+            </div>
+
+            <!-- Sysctls gaming -->
+            <div style="margin-top: 22px;">
+                <h3 style="color: var(--primary); margin-bottom: 6px; font-size: 1em;">Gaming (sysctls)</h3>
+                <p style="font-size: 0.85em; color: var(--text-muted); margin-bottom: 10px;">
+                    Reglages noyau pour le jeu (split_lock_mitigate=0, max_map_count=16M, tcp_mtu_probing=1). Drop-in dans /etc/sysctl.d/, necessite le cache sudo.
+                </p>
+                <div id="sysctlsControls">
+                    <div style="color: var(--text-muted);">Chargement...</div>
+                </div>
+            </div>
+
+            <!-- Scheduler gaming (sched-ext) -->
+            <div style="margin-top: 22px;">
+                <h3 style="color: var(--primary); margin-bottom: 6px; font-size: 1em;">Scheduler gaming (sched-ext)</h3>
+                <p style="font-size: 0.85em; color: var(--text-muted); margin-bottom: 10px;">
+                    Attache un scheduler eBPF gaming/latence (scx_lavd) sur le noyau Fedora standard - le gain d'interactivite de CachyOS sans remplacer le kernel. Sans risque : un watchdog noyau revient au scheduler par defaut en cas de probleme, reversible a chaud.
+                </p>
+                <div id="schedulerControls">
+                    <div style="color: var(--text-muted);">Chargement...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ecran de connexion (Plasma Login Manager) -->
+        <div class="profiles-section" id="sddmSection">
+            <div class="profiles-header">
+                <h2>Ecran de connexion (Plasma Login)</h2>
+                <button class="btn-small" onclick="loadSddmStatus()">Rafraichir</button>
+            </div>
+            <p style="font-size: 0.85em; color: var(--text-muted); margin-bottom: 8px;">
+                Applique le theme, curseur et numlock a l'ecran de connexion <strong>plasma-login-manager</strong> (DM par defaut de Nobara/Fedora KDE 42+) via la configuration dans <code>/etc/plasmalogin.conf.d/</code>.
+            </p>
+            <div style="font-size: 0.82em; background: #fef3cd; border-left: 3px solid var(--warning); border-radius: 6px; padding: 8px 12px; margin-bottom: 14px; color: #856404;">
+                Les themes doivent etre installes dans <strong>/usr/share/themes</strong> ou <strong>/usr/share/icons</strong>
+                (pas dans ~/.themes) car le display manager tourne en tant qu'utilisateur systeme.
+                Utilisez l'option "Installation systeme" dans le catalogue de themes.
+            </div>
+            <div id="sddmStatus" style="font-size: 0.85em; color: var(--text-muted); margin-bottom: 14px; background: var(--light); border-radius: 8px; padding: 10px;">
+                Chargement...
+            </div>
+            <button class="install-profiles-btn" onclick="sddmSync()" style="font-size: 1em; padding: 14px;">
+                Synchroniser avec le bureau actuel
+            </button>
+        </div>
+
+        <!-- Historique & Rollback -->
+        <div class="history-section" id="historySection">
+            <h2>Historique des actions</h2>
+            <div class="history-summary" id="historySummary" style="display:none;"></div>
+            <div class="history-toolbar">
+                <button class="btn-small" onclick="loadHistory()">Rafraichir</button>
+                <button class="btn-small" onclick="rollbackLast()" style="border-color: var(--warning); color: var(--warning);">Annuler derniere</button>
+                <button class="btn-small" onclick="rollbackAll()" style="border-color: var(--danger); color: var(--danger);">Tout annuler</button>
+                <button class="btn-small" onclick="clearHistory()">Effacer historique</button>
+            </div>
+            <div id="historyContent">
+                <div class="history-empty">Aucune action enregistree</div>
+            </div>
+        </div>
+
+
+        <div class="history-section">
+            <div class="profiles-header">
+                <h2>Assistant SELinux</h2>
+                <button class="btn-small" onclick="loadSelinux()">Rafraichir</button>
+            </div>
+            <p style="font-size: 0.85em; color: var(--text-muted); margin-bottom: 12px;">
+                Fedora garde SELinux enforcing (contrairement a Nobara qui passe sur AppArmor). Ici on compose avec, sans jamais le desactiver : bascule de booleans cibles et diagnostic des refus recents.
+            </p>
+            <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 14px;">
+                <span id="selinuxMode" style="font-weight: bold; color: var(--text-muted);">Chargement...</span>
+            </div>
+            <div id="selinuxBooleans" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px;"></div>
+            <div>
+                <h3 style="color: var(--primary); margin-bottom: 6px; font-size: 0.95em;">Refus AVC recents (10 min)</h3>
+                <pre id="selinuxDenials"
+                     style="font-size: 0.76em; color: var(--text-muted); background: var(--light);
+                            padding: 10px; border-radius: 8px; white-space: pre-wrap; max-height: 180px; overflow-y: auto;">Chargement...</pre>
+            </div>
+        </div>
+
+        <div class="history-section">
+            <h2>Pare-feu (firewalld)</h2>
+            <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 12px;">
+                <span id="firewallStatus" style="font-weight: bold; color: var(--text-muted);">Chargement...</span>
+                <button class="btn-small" onclick="loadFirewall()">Rafraichir</button>
+                <button class="btn-small" id="btnFirewallEnable" onclick="firewallEnable()"
+                        style="border-color: var(--success); color: var(--success);">Activer</button>
+                <button class="btn-small" id="btnFirewallDisable" onclick="firewallDisable()"
+                        style="border-color: var(--danger); color: var(--danger);">Desactiver</button>
+            </div>
+            <pre id="firewallOutput"
+                 style="font-size: 0.78em; color: var(--text-muted); background: var(--light);
+                        padding: 10px; border-radius: 8px; white-space: pre-wrap; display: none;"></pre>
+        </div>
+
+        <div class="logs-section">
+            <h2><span class="sse-indicator disconnected" id="sseIndicator"></span>Logs en temps reel</h2>
+            <div class="logs-toolbar">
+                <button class="btn-small" onclick="clearLogs()">Effacer</button>
+                <button class="btn-small" id="btnAutoScroll" onclick="toggleAutoScroll()">Auto-scroll: ON</button>
+            </div>
+            <div class="logs-container" id="logsContainer">
+                <div class="log-line">Connexion au systeme de logs...</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Modal confirm generique -->
+    <div class="modal-overlay" id="confirmOverlay">
+        <div class="confirm-modal">
+            <div class="confirm-title" id="confirmTitle"></div>
+            <p id="confirmMessage"></p>
+            <div class="confirm-actions">
+                <button class="btn-confirm-cancel" onclick="confirmCancel()">Annuler</button>
+                <button class="btn-confirm-ok" id="confirmOk" onclick="confirmOk()">Confirmer</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modalOverlay" onclick="closeModalOutside(event)">
+        <div class="modal" id="profileModal">
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+            <h3 id="modalTitle"></h3>
+            <p class="modal-desc" id="modalDesc"></p>
+            <div id="modalContent"></div>
+            <div id="modalFooter" style="display:none; margin-top: 16px; border-top: 1px solid var(--border); padding-top: 14px; display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="btn-small" onclick="checkAllModalPkgs(true)">Tout cocher</button>
+                <button class="btn-small" onclick="checkAllModalPkgs(false)">Tout decocher</button>
+                <button class="install-profiles-btn" id="btnInstallCustom" style="flex: 1; padding: 12px; font-size: 0.95em;" onclick="installCustomFromModal()">
+                    Installer la selection
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

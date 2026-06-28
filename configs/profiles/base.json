@@ -1,0 +1,31 @@
+{
+  "name": "Base",
+  "description": "Outils essentiels pour tout poste Fedora KDE",
+  "icon": "wrench",
+  "apt": [
+    { "name": "wget", "description": "Telechargeur reseau" },
+    { "name": "curl", "description": "Transfert de donnees en ligne de commande" },
+    { "name": "pavucontrol", "description": "Controle de volume PipeWire/PulseAudio" },
+    { "name": "flameshot", "description": "Capture d'ecran avancee avec edition" },
+    { "name": "meld", "description": "Comparaison visuelle de fichiers et dossiers" },
+    { "name": "fastfetch", "description": "Affichage des infos systeme dans le terminal" },
+    { "name": "p7zip", "description": "Archiveur 7-Zip en ligne de commande" },
+    { "name": "p7zip-plugins", "description": "Plugins supplementaires pour p7zip" },
+    { "name": "sassc", "description": "Compilateur SASS/SCSS (requis pour themes GTK)" },
+    { "name": "fira-code-fonts", "description": "Police FiraCode pour le developpement" },
+    { "name": "dejavu-sans-fonts", "description": "Famille de polices DejaVu" },
+    { "name": "gtk-murrine-engine", "description": "Moteur GTK2 pour les themes" },
+    { "name": "kvantum", "description": "Moteur de themes Qt/KDE base sur SVG" },
+    { "name": "htop", "description": "Moniteur de processus en terminal" },
+    { "name": "btop", "description": "Moniteur systeme moderne (CPU/RAM/disque/reseau)" },
+    { "name": "bat", "description": "Remplacant cat avec coloration syntaxique" },
+    { "name": "eza", "description": "Remplacant ls moderne (couleurs, git, arborescence)" },
+    { "name": "tree", "description": "Affichage arborescent des dossiers" }
+  ],
+  "flatpak": [
+    { "app": "com.github.tchx84.Flatseal", "description": "Gestionnaire de permissions Flatpak" },
+    { "app": "io.github.flattool.Warehouse", "description": "Gestionnaire avance de Flatpaks" }
+  ],
+  "external": [],
+  "remove": []
+}

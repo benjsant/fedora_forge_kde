@@ -1,0 +1,17 @@
+{
+  "name": "Navigateurs",
+  "description": "Navigateurs alternatifs a Firefox (deja installe sur Fedora)",
+  "icon": "box",
+  "apt": [
+    { "name": "chromium", "description": "Navigateur Chromium (base open-source de Chrome)" }
+  ],
+  "flatpak": [],
+  "external": [
+    {
+      "name": "Brave Browser",
+      "description": "Navigateur Brave axe vie privee (depot officiel)",
+      "cmd": "sudo bash -c 'rpm --import https://brave-browser-rpm-release.s3.brave.com/brave-core.asc && curl -sSLo /etc/yum.repos.d/brave-browser.repo https://brave-browser-rpm-release.s3.brave.com/brave-browser.repo && dnf install -y brave-browser'"
+    }
+  ],
+  "remove": []
+}

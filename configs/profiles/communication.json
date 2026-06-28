@@ -1,0 +1,14 @@
+{
+  "name": "Communication",
+  "description": "Messageries chiffrees et partage de fichiers local",
+  "icon": "shield",
+  "apt": [],
+  "flatpak": [
+    { "app": "org.signal.Signal", "description": "Signal Desktop : messagerie chiffree end-to-end" },
+    { "app": "im.riot.Riot", "description": "Element : client Matrix decentralise" },
+    { "app": "org.localsend.localsend_app", "description": "LocalSend : transfert local sans cloud (alternative AirDrop)" },
+    { "app": "com.discordapp.Discord", "description": "Discord (Flatpak officiel)" }
+  ],
+  "external": [],
+  "remove": []
+}

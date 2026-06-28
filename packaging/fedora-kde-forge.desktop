@@ -1,0 +1,15 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=FedoraForgeKDE
+GenericName=Fedora KDE Post-Install Tool
+Comment=Automatisation post-installation pour Fedora KDE (profils, theme, drivers)
+Comment[en]=Post-install automation for Fedora KDE (profiles, theme, drivers)
+Comment[fr]=Automatisation post-installation pour Fedora KDE (profils, theme, drivers)
+Icon=fedora-kde-forge
+Exec=__PROJECT_DIR__/fedoraforgeKDE.sh
+Terminal=true
+Categories=System;Settings;Utility;
+Keywords=Fedora;Post-Install;Setup;Forge;Profile;Theme;
+StartupNotify=true
+StartupWMClass=FedoraForgeKDE
