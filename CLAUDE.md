@@ -3,6 +3,8 @@
 Outil d'automatisation post-installation pour **Fedora KDE Plasma Spin** (Fedora Workstation Edition KDE).
 Hard fork du projet [nobara-kde-forge](https://github.com/benjsant/nobara-kde-forge) adapte a Fedora vanilla, qui a moins de pre-configuration que Nobara out-of-the-box (pas de kernel patche, pas de codecs proprietaires, RPM Fusion a activer, NVIDIA a configurer, etc.).
 
+> **Nouvelle session ?** Lire d'abord [docs/STATUS.md](docs/STATUS.md) (etat du projet : fait / valide / a faire) puis revenir ici pour les details techniques. Le workflow de test VM est dans [tools/CLAUDE.md](tools/CLAUDE.md).
+
 ## Lancement
 
 ```bash
