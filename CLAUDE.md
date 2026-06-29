@@ -129,7 +129,7 @@ fedora_kde_forge/
 │   ├── state_routes.py      # /api/state/* (rollback)
 │   ├── fedora_wizards.py    # /api/fedora/* : RPM Fusion, codecs, NVIDIA, Flathub (faits)
 │   ├── selinux.py           # /api/selinux/* : assistant SELinux (status, diagnostic AVC, toggle booleans)
-│   └── tweaks.py            # /api/tweaks/* (reset plasma, services systemd, audio PipeWire/BT, sysctls gaming, scheduler sched-ext, barre des taches fixe/flottante, zram zstd, menu admin Dolphin)
+│   └── tweaks.py            # /api/tweaks/* (reset plasma, services systemd, audio PipeWire/BT, sysctls gaming, scheduler sched-ext, barre des taches fixe/flottante, zram zstd, menu admin Dolphin, Dolphin home au demarrage)
 │
 ├── scripts/                 # Logique d'installation (appeles par les routes)
 │   ├── __init__.py
@@ -159,6 +159,7 @@ fedora_kde_forge/
 │   ├── admin_menu.py        # Menu Dolphin "Ouvrir en tant qu'administrateur" (installe/retire kio-admin, comme Nobara)
 │   ├── zram_tweaks.py       # zram facon Nobara : compression zstd (zram-generator.conf) + vm.swappiness=100 (drop-in sysctl)
 │   ├── panel_tweaks.py      # Barre des taches Plasma flottante/fixe (kwriteconfig6 floating, reload plasmashell, user-level)
+│   ├── dolphin_tweaks.py    # Dolphin : dossier personnel au demarrage (RememberOpenedTabs=false, kwriteconfig6, user-level)
 │   ├── selinux_manager.py   # Assistant SELinux : mode, booleans whitelistes (setsebool -P), denials AVC. Jamais setenforce 0
 │   └── system_info.py       # Detection identite Fedora (kernel vanilla, LSM, SELinux, btrfs, zram, cache 30s)
 │
@@ -201,6 +202,7 @@ fedora_kde_forge/
     ├── test_admin_menu.py         # Menu admin Dolphin (kio-admin) : status/enable/disable + routes
     ├── test_zram_tweaks.py        # zram zstd + swappiness : parsing algo, apply/remove, routes
     ├── test_panel_tweaks.py       # Barre des taches : parsing containments panneau, set_floating, routes
+    ├── test_dolphin_tweaks.py     # Dolphin home au demarrage : status, set_home_on_startup, routes
     ├── test_selinux.py            # Assistant SELinux : booleans whitelist + parsing + routes
     ├── test_system_info.py        # Parsing OS/kernel/btrfs/zram
     └── test_fedora_wizards.py     # RPM Fusion, codecs, NVIDIA, Flathub (faits)

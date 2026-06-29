@@ -14,6 +14,8 @@ from utils.audio_tweaks import (
     set_bt_premium_codecs,
     set_sample_rate,
 )
+from utils.dolphin_tweaks import set_home_on_startup as dolphin_set_home
+from utils.dolphin_tweaks import status as dolphin_status
 from utils.panel_tweaks import set_floating as panel_set_floating
 from utils.panel_tweaks import status as panel_status
 from utils.plasma_tweaks import clear_caches, reset_plasmashell
@@ -219,6 +221,25 @@ def panel_floating():
         return jsonify({"success": False, "error": msg}), 500
     log_success(msg)
     return jsonify({"success": True, "floating": floating, "message": msg, **panel_status()})
+
+
+# --------- Dolphin : dossier personnel au demarrage ---------
+
+@bp.route('/api/tweaks/dolphin')
+def dolphin():
+    return jsonify({"success": True, **dolphin_status()})
+
+
+@bp.route('/api/tweaks/dolphin/home-startup', methods=['POST'])
+def dolphin_home_startup():
+    data = request.get_json(silent=True) or {}
+    enable = bool(data.get("enable", False))
+    ok, msg = dolphin_set_home(enable)
+    if not ok:
+        log_error(f"Dolphin : {msg}")
+        return jsonify({"success": False, "error": msg}), 500
+    log_success(msg)
+    return jsonify({"success": True, "enabled": enable, "message": msg, **dolphin_status()})
 
 
 # --------- Memoire : zram facon Nobara (zstd + swappiness) ---------

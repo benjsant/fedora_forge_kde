@@ -1142,6 +1142,48 @@
             loadPanel();
             loadZram();
             loadAdminMenu();
+            loadDolphin();
+        }
+
+        function loadDolphin() {
+            const ctrl = document.getElementById('dolphinControls');
+            if (!ctrl) return;
+            fetch('/api/tweaks/dolphin')
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.success) { ctrl.innerHTML = '<div style="color: var(--text-muted);">Non disponible</div>'; return; }
+                    if (!data.available) {
+                        ctrl.innerHTML = '<div style="font-size: 0.85em; color: var(--text-muted);">Outils KDE (kwriteconfig6) absents : indisponible.</div>';
+                        return;
+                    }
+                    const on = data.home_on_startup;
+                    ctrl.innerHTML =
+                        '<div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">' +
+                          '<span style="font-weight: bold; color: ' + (on ? 'var(--success)' : 'var(--text-muted)') + ';">' +
+                            (on ? 'Ouvre le dossier personnel' : 'Memorise les onglets') + '</span>' +
+                          '<button class="btn-small" id="btnDolphinToggle" onclick="toggleDolphin(' + (on ? 'false' : 'true') + ')" ' +
+                            'style="border-color: ' + (on ? 'var(--danger)' : 'var(--success)') + '; color: ' + (on ? 'var(--danger)' : 'var(--success)') + ';">' +
+                            (on ? 'Desactiver' : 'Activer') + '</button>' +
+                        '</div>';
+                })
+                .catch(() => { ctrl.innerHTML = '<div style="color: var(--text-muted);">Non disponible</div>'; });
+        }
+
+        function toggleDolphin(enable) {
+            const btn = document.getElementById('btnDolphinToggle');
+            if (btn) { btn.disabled = true; btn.textContent = '...'; }
+            fetch('/api/tweaks/dolphin/home-startup', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ enable })
+            })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) showToast(data.message || 'Dolphin mis a jour', 'success');
+                    else showToast(data.error || 'Erreur', 'error');
+                    loadDolphin();
+                })
+                .catch(() => { showToast('Erreur reseau', 'error'); loadDolphin(); });
         }
 
         function loadPanel() {

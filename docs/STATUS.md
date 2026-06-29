@@ -35,6 +35,7 @@ garde en enforcing** (Nobara, lui, desactive SELinux et passe sur AppArmor).
   + zram facon Nobara ([utils/zram_tweaks.py](../utils/zram_tweaks.py) : compression zstd +
   `vm.swappiness=100`, valide en VM Fedora 44)
   + barre des taches fixe/flottante ([utils/panel_tweaks.py](../utils/panel_tweaks.py))
+  + Dolphin dossier personnel au demarrage ([utils/dolphin_tweaks.py](../utils/dolphin_tweaks.py), valide en VM)
   + filtre des faux positifs VM (mcelog) dans le compteur `failed_services` de `/api/status`.
 - **Outils systeme** ([routes/fedora_tools.py](../routes/fedora_tools.py), `/api/tools/*`) :
   remplace l'ancien `nobara_tools` par Discover/systemsettings/etc.
