@@ -8,6 +8,7 @@ from routes.fedora_wizards import _rpmfusion_status
 from routes.shared import (
     current_task,
     log_error,
+    log_exc,
     log_info,
     log_success,
     log_warn,
@@ -165,7 +166,7 @@ def install_profiles():
                 update_task_status("Profils installes", False, 100)
                 log_success(f"{total} profil(s) installe(s)")
         except Exception as e:
-            log_error(f"Erreur installation profils : {e}")
+            log_exc(f"Erreur installation profils : {e}")
             update_task_status("Installation echouee", False, 100)
 
     threading.Thread(target=run, daemon=True).start()
@@ -315,7 +316,7 @@ def install_custom():
                 update_task_status("Installation terminee", False, 100)
                 log_success("Installation personnalisee terminee.")
         except Exception as e:
-            log_error(f"Erreur installation personnalisee : {e}")
+            log_exc(f"Erreur installation personnalisee : {e}")
             update_task_status("Erreur", False, 0)
 
     threading.Thread(target=run, daemon=True).start()

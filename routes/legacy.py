@@ -16,6 +16,7 @@ from routes.shared import (
     cancel_current_task,
     current_task,
     log_error,
+    log_exc,
     log_info,
     log_queue,
     log_success,
@@ -255,7 +256,7 @@ def execute_all():
                             break
                 time.sleep(0.5)
         except Exception as e:
-            log_error(f"Erreur inattendue : {e}")
+            log_exc(f"Erreur inattendue : {e}")
             failed.append("erreur inattendue")
         finally:
             if failed:
@@ -350,7 +351,7 @@ def apply_recommended_theme():
                 log_error("Config terminee avec erreurs")
                 update_task_status("Erreurs detectees", False, 100)
         except Exception as e:
-            log_error(f"Erreur config themes : {e}")
+            log_exc(f"Erreur config themes : {e}")
             update_task_status("", False, 0)
 
     threading.Thread(target=run, daemon=True).start()

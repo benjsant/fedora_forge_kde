@@ -6,6 +6,7 @@ import queue
 import subprocess
 import sys
 import threading
+import traceback
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
@@ -52,11 +53,30 @@ logging.basicConfig(
 )
 logger = logging.getLogger("fedoraforgekde")
 
+# Logger fichier seul (propagate=False) : pour ecrire les tracebacks multi-lignes
+# SANS les envoyer en SSE, ou les '\n' casseraient le framing 'data:' du flux.
+_file_logger = logging.getLogger("fedoraforgekde.file")
+_file_logger.propagate = False
+_file_logger.setLevel(logging.INFO)
+_file_logger.addHandler(_file_handler)
+
 
 def log_info(msg):    logger.info(msg)
 def log_success(msg): logger.info(f"[OK] {msg}")
 def log_warn(msg):    logger.warning(f"[WARN] {msg}")
 def log_error(msg):   logger.error(f"[ERROR] {msg}")
+
+
+def log_exc(msg):
+    """Comme log_error mais ajoute la traceback complete dans le fichier de log.
+
+    Le message court part en SSE + fichier ; la traceback ne va que dans le
+    fichier (logs/fedoraforgekde.log), pour le diagnostic, sans polluer l'UI ni
+    casser le flux SSE. A utiliser dans les `except` qui sinon avaleraient l'erreur."""
+    log_error(msg)
+    tb = traceback.format_exc()
+    if tb and tb.strip() and tb.strip() != "NoneType: None":
+        _file_logger.error("Traceback:\n%s", tb.rstrip())
 
 
 def notify_desktop(title, message=""):
