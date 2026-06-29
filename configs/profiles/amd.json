@@ -24,8 +24,8 @@
   "external": [
     {
       "name": "Variantes mesa-freeworld (codecs proprietaires)",
-      "description": "Remplace les pilotes VA-API/VDPAU/Vulkan Mesa par les variantes freeworld de RPM Fusion (decodage h264/h265/AV1). Active RPM Fusion via le wizard Fedora au prealable.",
-      "cmd": "if dnf repolist --enabled rpmfusion-free 2>/dev/null | grep -q rpmfusion-free; then sudo dnf install -y --allowerasing mesa-va-drivers-freeworld mesa-vdpau-drivers-freeworld mesa-vulkan-drivers-freeworld mesa-va-drivers-freeworld.i686 mesa-vdpau-drivers-freeworld.i686 mesa-vulkan-drivers-freeworld.i686; else echo 'RPM Fusion requis : activez-le via le wizard Fedora avant les variantes freeworld' && exit 1; fi"
+      "description": "Remplace les pilotes VA-API/Vulkan Mesa par les variantes freeworld de RPM Fusion (decodage h264/h265/AV1 via VA-API). Active RPM Fusion via le wizard Fedora au prealable. Note : RPM Fusion ne fournit pas mesa-vdpau-drivers-freeworld sur Fedora recent, le VDPAU reste en variante libre (VA-API est le chemin principal sur AMD).",
+      "cmd": "if dnf repolist --enabled rpmfusion-free 2>/dev/null | grep -q rpmfusion-free; then sudo dnf install -y --allowerasing --skip-unavailable mesa-va-drivers-freeworld mesa-vulkan-drivers-freeworld mesa-va-drivers-freeworld.i686 mesa-vulkan-drivers-freeworld.i686; else echo 'RPM Fusion requis : activez-le via le wizard Fedora avant les variantes freeworld' && exit 1; fi"
     }
   ],
   "remove": []
