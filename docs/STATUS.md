@@ -55,8 +55,16 @@ Etat tests : ~192 pytest verts, ruff clean.
 
 - VALIDE : logique Python (tests mockes), CI, validation Pydantic des 16 profils,
   syntaxe bash.
-- **PAS valide** : comportement systeme reel (les wizards lancent `dnf`/`sudo`/`systemctl`
-  sur un vrai Fedora enforcing). A faire en **VM Fedora 44 KDE** via le harnais SSH.
+- VALIDE EN VM Fedora 44 KDE reelle (campagne 2026-06-29, SELinux enforcing) :
+  - `--all` complet (MAJ systeme + 24 paquets + VS Code + nettoyage 15 paquets + flatpaks + themes) ;
+  - wizards **RPM Fusion** (free+nonfree), **codecs** (swap ffmpeg-free -> ffmpeg-libs), **NVIDIA akmod** (resolution) ;
+  - flatpaks (install systeme via sudo), themes (Orchis/Sweet/Layan/Catppuccin/Tela/Bibata/phinger).
+  - Bugs trouves ET corriges : `sudo -v` non-tty dans `--all`, `run_sudo_command(cwd=)`,
+    paquet `kdeconnect`->`kdeconnectd`, flatpak install systeme sans sudo,
+    `amd.json` listait `mesa-vdpau-drivers-freeworld` (absent de RPM Fusion F44).
+- **PAS ENCORE** : un `INTERNAL SCRIPT ERROR` non bloquant dans l'install.sh d'un
+  theme GTK upstream (a identifier/ajuster dans `themes_*.json`). NVIDIA reel
+  (compilation akmod + boot) non testable sur VM sans GPU NVIDIA.
 
 ## Prochaines actions (par priorite)
 
