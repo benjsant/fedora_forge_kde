@@ -352,6 +352,28 @@
                 </div>
             </div>
 
+            <!-- Barre des taches : flottante / fixe -->
+            <div style="margin-top: 22px;">
+                <h3 style="color: var(--primary); margin-bottom: 6px; font-size: 1em;">Barre des taches (panneau)</h3>
+                <p style="font-size: 0.85em; color: var(--text-muted); margin-bottom: 10px;">
+                    Bascule le panneau Plasma entre <strong>flottant</strong> (defaut Fedora) et <strong>fixe</strong> (colle au bord). Relance plasmashell pour appliquer.
+                </p>
+                <div id="panelControls">
+                    <div style="color: var(--text-muted);">Chargement...</div>
+                </div>
+            </div>
+
+            <!-- Memoire : zram facon Nobara -->
+            <div style="margin-top: 22px;">
+                <h3 style="color: var(--primary); margin-bottom: 6px; font-size: 1em;">Memoire (zram facon Nobara)</h3>
+                <p style="font-size: 0.85em; color: var(--text-muted); margin-bottom: 10px;">
+                    Bascule le swap zram en compression <strong>zstd</strong> (swap effectif plus grand qu'en lzo-rle) et passe <code>vm.swappiness</code> a 100, comme Nobara. Fedora a deja le zram, ce tweak ne fait qu'aligner l'algo et la swappiness. Reversible.
+                </p>
+                <div id="zramControls">
+                    <div style="color: var(--text-muted);">Chargement...</div>
+                </div>
+            </div>
+
             <!-- Menu Dolphin : Ouvrir en tant qu'administrateur -->
             <div style="margin-top: 22px;">
                 <h3 style="color: var(--primary); margin-bottom: 6px; font-size: 1em;">Menu "Ouvrir en tant qu'administrateur" (Dolphin)</h3>

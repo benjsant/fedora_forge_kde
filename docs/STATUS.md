@@ -31,7 +31,11 @@ garde en enforcing** (Nobara, lui, desactive SELinux et passe sur AppArmor).
 - **Tweaks** ([routes/tweaks.py](../routes/tweaks.py)) : sysctls gaming + scheduler
   **sched-ext** (`scx_lavd`) sur kernel Fedora standard (alternative sure au kernel CachyOS)
   + menu Dolphin "Ouvrir en tant qu'administrateur" ([utils/admin_menu.py](../utils/admin_menu.py),
-  installe `kio-admin` comme sur Nobara).
+  installe `kio-admin` comme sur Nobara)
+  + zram facon Nobara ([utils/zram_tweaks.py](../utils/zram_tweaks.py) : compression zstd +
+  `vm.swappiness=100`, valide en VM Fedora 44)
+  + barre des taches fixe/flottante ([utils/panel_tweaks.py](../utils/panel_tweaks.py))
+  + filtre des faux positifs VM (mcelog) dans le compteur `failed_services` de `/api/status`.
 - **Outils systeme** ([routes/fedora_tools.py](../routes/fedora_tools.py), `/api/tools/*`) :
   remplace l'ancien `nobara_tools` par Discover/systemsettings/etc.
 - **Garde RPM Fusion au preflight** ([routes/profiles.py](../routes/profiles.py)) :

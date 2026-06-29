@@ -1139,7 +1139,97 @@
             loadAudioStatus();
             loadSysctls();
             loadScheduler();
+            loadPanel();
+            loadZram();
             loadAdminMenu();
+        }
+
+        function loadPanel() {
+            const ctrl = document.getElementById('panelControls');
+            if (!ctrl) return;
+            fetch('/api/tweaks/panel')
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.success) { ctrl.innerHTML = '<div style="color: var(--text-muted);">Non disponible</div>'; return; }
+                    if (!data.available) {
+                        ctrl.innerHTML = '<div style="font-size: 0.85em; color: var(--text-muted);">Aucun panneau Plasma detecte (ou outils KDE absents).</div>';
+                        return;
+                    }
+                    const floating = data.floating;
+                    // Bouton qui bascule vers l'etat oppose
+                    ctrl.innerHTML =
+                        '<div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">' +
+                          '<span style="font-weight: bold; color: ' + (floating ? 'var(--text-muted)' : 'var(--success)') + ';">' +
+                            (floating ? 'Flottante' : 'Fixe') + '</span>' +
+                          '<button class="btn-small" id="btnPanelToggle" onclick="togglePanel(' + (floating ? 'false' : 'true') + ')" ' +
+                            'style="border-color: var(--primary); color: var(--primary);">' +
+                            (floating ? 'Rendre fixe' : 'Rendre flottante') + '</button>' +
+                          '<span style="font-size: 0.78em; color: var(--text-muted);">' + esc(String(data.panel_count)) + ' panneau(x)</span>' +
+                        '</div>';
+                })
+                .catch(() => { ctrl.innerHTML = '<div style="color: var(--text-muted);">Non disponible</div>'; });
+        }
+
+        function togglePanel(floating) {
+            const btn = document.getElementById('btnPanelToggle');
+            if (btn) { btn.disabled = true; btn.textContent = '...'; }
+            fetch('/api/tweaks/panel/floating', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ floating })
+            })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) showToast(data.message || 'Barre mise a jour', 'success');
+                    else showToast(data.error || 'Erreur', 'error');
+                    setTimeout(loadPanel, 1500);
+                })
+                .catch(() => { showToast('Erreur reseau', 'error'); loadPanel(); });
+        }
+
+        function loadZram() {
+            const ctrl = document.getElementById('zramControls');
+            if (!ctrl) return;
+            fetch('/api/tweaks/zram')
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.success) { ctrl.innerHTML = '<div style="color: var(--text-muted);">Non disponible</div>'; return; }
+                    if (!data.zram_present) {
+                        ctrl.innerHTML = '<div style="font-size: 0.85em; color: var(--text-muted);">Aucun device zram sur ce systeme : indisponible.</div>';
+                        return;
+                    }
+                    const on = data.applied;
+                    ctrl.innerHTML =
+                        '<div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">' +
+                          '<span style="font-weight: bold; color: ' + (on ? 'var(--success)' : 'var(--text-muted)') + ';">' +
+                            (on ? 'Actif (zstd)' : 'Defaut Fedora') + '</span>' +
+                          '<button class="btn-small" id="btnZramToggle" onclick="toggleZram(' + (on ? 'false' : 'true') + ')" ' +
+                            'style="border-color: ' + (on ? 'var(--danger)' : 'var(--success)') + '; color: ' + (on ? 'var(--danger)' : 'var(--success)') + ';">' +
+                            (on ? 'Desactiver' : 'Activer') + '</button>' +
+                        '</div>' +
+                        '<div style="margin-top: 8px; line-height: 1.6;">' +
+                          '<code style="font-size: 0.78em; color: var(--text-muted);">algo = ' + esc(String(data.current_algo ?? '?')) + ' (cible ' + esc(data.target_algo) + ')</code><br>' +
+                          '<code style="font-size: 0.78em; color: var(--text-muted);">vm.swappiness = ' + esc(String(data.current_swappiness ?? '?')) + ' (cible ' + esc(String(data.target_swappiness)) + ')</code>' +
+                        '</div>';
+                })
+                .catch(() => { ctrl.innerHTML = '<div style="color: var(--text-muted);">Non disponible</div>'; });
+        }
+
+        function toggleZram(enable) {
+            const btn = document.getElementById('btnZramToggle');
+            if (btn) { btn.disabled = true; btn.textContent = '...'; }
+            fetch('/api/tweaks/zram/toggle', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ enable })
+            })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) showToast(data.message || 'zram mis a jour', 'success');
+                    else showToast(data.error || 'Erreur', 'error');
+                    loadZram();
+                })
+                .catch(() => { showToast('Erreur reseau', 'error'); loadZram(); });
         }
 
         function loadAdminMenu() {
