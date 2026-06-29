@@ -20,6 +20,19 @@
             setTimeout(() => el.remove(), 4000);
         }
 
+        // Helper API unique : centralise method/headers/JSON.stringify et le parsing
+        // de la reponse. `api(path)` -> GET ; `api(path, {body})` -> POST JSON.
+        // Retourne directement le JSON parse (remplace fetch().then(r => r.json())).
+        function api(path, opts) {
+            opts = opts || {};
+            const init = { method: opts.method || (opts.body !== undefined ? 'POST' : 'GET'), headers: {} };
+            if (opts.body !== undefined) {
+                init.headers['Content-Type'] = 'application/json';
+                init.body = JSON.stringify(opts.body);
+            }
+            return fetch(path, init).then(r => r.json());
+        }
+
         let _confirmCallback = null;
         function showConfirm(title, message, onOk, danger) {
             document.getElementById('confirmTitle').textContent = title;
@@ -1148,8 +1161,7 @@
         function loadDolphin() {
             const ctrl = document.getElementById('dolphinControls');
             if (!ctrl) return;
-            fetch('/api/tweaks/dolphin')
-                .then(r => r.json())
+            api('/api/tweaks/dolphin')
                 .then(data => {
                     if (!data.success) { ctrl.innerHTML = '<div style="color: var(--text-muted);">Non disponible</div>'; return; }
                     if (!data.available) {
@@ -1172,12 +1184,7 @@
         function toggleDolphin(enable) {
             const btn = document.getElementById('btnDolphinToggle');
             if (btn) { btn.disabled = true; btn.textContent = '...'; }
-            fetch('/api/tweaks/dolphin/home-startup', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ enable })
-            })
-                .then(r => r.json())
+            api('/api/tweaks/dolphin/home-startup', { body: { enable } })
                 .then(data => {
                     if (data.success) showToast(data.message || 'Dolphin mis a jour', 'success');
                     else showToast(data.error || 'Erreur', 'error');
@@ -1189,8 +1196,7 @@
         function loadPanel() {
             const ctrl = document.getElementById('panelControls');
             if (!ctrl) return;
-            fetch('/api/tweaks/panel')
-                .then(r => r.json())
+            api('/api/tweaks/panel')
                 .then(data => {
                     if (!data.success) { ctrl.innerHTML = '<div style="color: var(--text-muted);">Non disponible</div>'; return; }
                     if (!data.available) {
@@ -1215,12 +1221,7 @@
         function togglePanel(floating) {
             const btn = document.getElementById('btnPanelToggle');
             if (btn) { btn.disabled = true; btn.textContent = '...'; }
-            fetch('/api/tweaks/panel/floating', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ floating })
-            })
-                .then(r => r.json())
+            api('/api/tweaks/panel/floating', { body: { floating } })
                 .then(data => {
                     if (data.success) showToast(data.message || 'Barre mise a jour', 'success');
                     else showToast(data.error || 'Erreur', 'error');
@@ -1232,8 +1233,7 @@
         function loadZram() {
             const ctrl = document.getElementById('zramControls');
             if (!ctrl) return;
-            fetch('/api/tweaks/zram')
-                .then(r => r.json())
+            api('/api/tweaks/zram')
                 .then(data => {
                     if (!data.success) { ctrl.innerHTML = '<div style="color: var(--text-muted);">Non disponible</div>'; return; }
                     if (!data.zram_present) {
@@ -1260,12 +1260,7 @@
         function toggleZram(enable) {
             const btn = document.getElementById('btnZramToggle');
             if (btn) { btn.disabled = true; btn.textContent = '...'; }
-            fetch('/api/tweaks/zram/toggle', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ enable })
-            })
-                .then(r => r.json())
+            api('/api/tweaks/zram/toggle', { body: { enable } })
                 .then(data => {
                     if (data.success) showToast(data.message || 'zram mis a jour', 'success');
                     else showToast(data.error || 'Erreur', 'error');
@@ -1277,8 +1272,7 @@
         function loadAdminMenu() {
             const ctrl = document.getElementById('adminMenuControls');
             if (!ctrl) return;
-            fetch('/api/tweaks/admin-menu')
-                .then(r => r.json())
+            api('/api/tweaks/admin-menu')
                 .then(data => {
                     if (!data.success) { ctrl.innerHTML = '<div style="color: var(--text-muted);">Non disponible</div>'; return; }
                     const on = data.installed;
@@ -1297,12 +1291,7 @@
         function toggleAdminMenu(enable) {
             const btn = document.getElementById('btnAdminMenuToggle');
             if (btn) { btn.disabled = true; btn.textContent = '...'; }
-            fetch('/api/tweaks/admin-menu/toggle', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ enable })
-            })
-                .then(r => r.json())
+            api('/api/tweaks/admin-menu/toggle', { body: { enable } })
                 .then(data => {
                     if (data.success) showToast(data.message || 'Menu administrateur mis a jour', 'success');
                     else showToast(data.error || 'Erreur', 'error');
