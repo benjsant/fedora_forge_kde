@@ -115,7 +115,16 @@ def _run_cli(slugs, dry_run):
 
 
 def _prime_sudo():
-    """Etablit le cache sudo (prompt mot de passe une fois). False si refus."""
+    """S'assure que sudo est utilisable. Retourne False si refus.
+
+    On teste d'abord `sudo -n true` : succes immediat si NOPASSWD est configure
+    ou si le cache sudo est encore valide (cas du pilotage a distance sans
+    terminal, ou du launcher qui a deja fait `sudo -v`). Sinon, et seulement si
+    on dispose d'un terminal, on demande le mot de passe via `sudo -v`."""
+    if subprocess.run(["sudo", "-n", "true"], capture_output=True).returncode == 0:
+        return True
+    if not sys.stdin.isatty():
+        return False
     return subprocess.run(["sudo", "-v"]).returncode == 0
 
 
