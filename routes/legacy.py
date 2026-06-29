@@ -224,6 +224,8 @@ def execute_all():
         current_task.update(running=True, name="Installation complete", progress=0)
 
     def run_all():
+        # Pas de themes ici : on garde le theme par defaut (Breeze). L'installation
+        # de themes reste opt-in via la section Themes de l'UI.
         tasks = [
             ("Mise a jour systeme", "system_update"),
             ("Paquets DNF", "dnf_install"),
@@ -231,7 +233,6 @@ def execute_all():
             ("Paquets externes", "external_install"),
             ("Nettoyage", "dnf_remove"),
             ("Flatpaks", "flatpak_install"),
-            ("Themes", "themes_install"),
         ]
         critical = {"system_update", "dnf_install"}
         total = len(tasks)

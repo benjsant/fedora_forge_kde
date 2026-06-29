@@ -131,17 +131,19 @@ def _prime_sudo():
 def _run_all(assume_yes=False):
     """Installation complete en CLI : reproduit le bouton 'Installation complete'
     du web (MAJ systeme + paquets DNF + optionnels + externes + nettoyage +
-    flatpaks + themes), sans Flask. Les scripts sont lances via `python -m
+    flatpaks), sans Flask. Les themes ne sont PAS touches (on garde Breeze ;
+    installation opt-in via l'UI). Les scripts sont lances via `python -m
     scripts.<name>` (meme chemin que l'UI web, logs streames dans le terminal)."""
     from utils.subprocess_utils import system_update
 
+    # Les themes ne sont PAS installes ici : on garde le theme par defaut (Breeze).
+    # L'installation de themes reste opt-in via la section Themes de l'UI.
     steps = [
         ("Paquets DNF", "dnf_install"),
         ("Paquets optionnels", "optional_install"),
         ("Paquets externes", "external_install"),
         ("Nettoyage (remove.json)", "dnf_remove"),
         ("Flatpaks", "flatpak_install"),
-        ("Themes", "themes_install"),
     ]
     critical = {"dnf_install"}
 

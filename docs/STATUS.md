@@ -62,9 +62,14 @@ Etat tests : ~192 pytest verts, ruff clean.
   - Bugs trouves ET corriges : `sudo -v` non-tty dans `--all`, `run_sudo_command(cwd=)`,
     paquet `kdeconnect`->`kdeconnectd`, flatpak install systeme sans sudo,
     `amd.json` listait `mesa-vdpau-drivers-freeworld` (absent de RPM Fusion F44).
-- **PAS ENCORE** : un `INTERNAL SCRIPT ERROR` non bloquant dans l'install.sh d'un
-  theme GTK upstream (a identifier/ajuster dans `themes_*.json`). NVIDIA reel
-  (compilation akmod + boot) non testable sur VM sans GPU NVIDIA.
+- **DECISION** : les themes ne sont plus installes par les flux "tout installer"
+  (`--all` CLI et bouton "Installation complete" web) : on garde le theme par
+  defaut (Breeze). L'installation de themes reste opt-in via la section Themes de
+  l'UI (`/api/execute/themes_install`). Cela ecarte aussi l'`INTERNAL SCRIPT ERROR`
+  d'un install.sh de theme GTK upstream observe en VM (a creuser si quelqu'un
+  signale un theme manuel casse).
+- **PAS ENCORE** : NVIDIA reel (compilation akmod + boot) non testable sur VM sans
+  GPU NVIDIA.
 
 ## Prochaines actions (par priorite)
 
