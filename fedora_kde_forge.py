@@ -5,9 +5,12 @@ Usage:
   fedora_kde_forge.py                          # Lance l'UI web
   fedora_kde_forge.py --profile gaming,dev     # Mode CLI : installe les profils sans Flask
   fedora_kde_forge.py --profile gaming --dry-run
+  fedora_kde_forge.py --all                    # Tout installer d'un coup (config complete, sans Flask)
+  fedora_kde_forge.py --all --yes              # Idem sans confirmation interactive
   fedora_kde_forge.py --list-profiles
 """
 
+import os
 import subprocess
 import sys
 import threading
@@ -111,6 +114,73 @@ def _run_cli(slugs, dry_run):
     return 0 if all_ok else 1
 
 
+def _prime_sudo():
+    """Etablit le cache sudo (prompt mot de passe une fois). False si refus."""
+    return subprocess.run(["sudo", "-v"]).returncode == 0
+
+
+def _run_all(assume_yes=False):
+    """Installation complete en CLI : reproduit le bouton 'Installation complete'
+    du web (MAJ systeme + paquets DNF + optionnels + externes + nettoyage +
+    flatpaks + themes), sans Flask. Les scripts sont lances via `python -m
+    scripts.<name>` (meme chemin que l'UI web, logs streames dans le terminal)."""
+    from utils.subprocess_utils import system_update
+
+    steps = [
+        ("Paquets DNF", "dnf_install"),
+        ("Paquets optionnels", "optional_install"),
+        ("Paquets externes", "external_install"),
+        ("Nettoyage (remove.json)", "dnf_remove"),
+        ("Flatpaks", "flatpak_install"),
+        ("Themes", "themes_install"),
+    ]
+    critical = {"dnf_install"}
+
+    print("\nInstallation complete (config) :")
+    print("  - Mise a jour systeme (dnf upgrade)")
+    for label, _ in steps:
+        print(f"  - {label}")
+    print("  ATTENTION : installe/supprime des paquets sur ce systeme.\n")
+
+    if not assume_yes and sys.stdin.isatty():
+        ans = input("Continuer ? [o/N] ").strip().lower()
+        if ans not in ("o", "oui", "y", "yes"):
+            _warn("Annule.")
+            return 1
+
+    if not _prime_sudo():
+        _fail("Acces sudo requis (sudo -v a echoue).")
+        return 1
+
+    root = Path(__file__).parent
+    env = {**os.environ, "PYTHONUNBUFFERED": "1"}
+
+    print("\n=== Mise a jour systeme ===")
+    if not system_update().success:
+        _fail("Mise a jour systeme echouee.")
+        return 1
+    _ok("Mise a jour systeme terminee.")
+
+    failed = []
+    for label, name in steps:
+        print(f"\n=== {label} ===")
+        rc = subprocess.run(
+            [sys.executable, "-m", f"scripts.{name}"], cwd=str(root), env=env
+        ).returncode
+        if rc != 0:
+            failed.append(label)
+            if name in critical:
+                _fail(f"Etape critique echouee : {label}")
+                return 1
+            _warn(f"Etape en erreur (non critique) : {label}")
+
+    if failed:
+        _warn(f"Installation complete terminee avec erreurs : {', '.join(failed)}")
+        return 1
+    _ok("Installation complete terminee.")
+    return 0
+
+
 def _list_profiles():
     from utils.profile_loader import load_all_profiles
     profiles = load_all_profiles()
@@ -125,6 +195,11 @@ def main():
 
     if "--list-profiles" in args or "-l" in args:
         return _list_profiles()
+
+    # Mode CLI : --all (installation complete config, sans Flask)
+    if "--all" in args:
+        assume_yes = "--yes" in args or "-y" in args
+        return _run_all(assume_yes=assume_yes)
 
     # Mode CLI : --profile <slug>[,<slug>...]
     if "--profile" in args:

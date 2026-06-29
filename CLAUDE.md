@@ -22,6 +22,9 @@ Hard fork du projet [nobara-kde-forge](https://github.com/benjsant/nobara-kde-fo
 .venv/bin/python fedora_kde_forge.py --list-profiles
 .venv/bin/python fedora_kde_forge.py --profile gaming,dev
 .venv/bin/python fedora_kde_forge.py --profile gaming --dry-run
+.venv/bin/python fedora_kde_forge.py --all            # Tout installer d'un coup (config complete)
+.venv/bin/python fedora_kde_forge.py --all --yes      # Sans confirmation interactive
+./fedoraforgeKDE.sh --all                             # Idem via le launcher (gere venv + sudo)
 
 # Tests (dev) : dans le venv
 .venv/bin/pip install pytest
