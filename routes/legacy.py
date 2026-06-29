@@ -34,6 +34,24 @@ bp = Blueprint("legacy", __name__)
 _status_cache = {"data": None, "ts": 0}
 STATUS_CACHE_TTL = 8
 
+# Services qui echouent typiquement en VM/virtualisation sans que ce soit un vrai
+# probleme (pas de materiel MCE expose au noyau invite). On les exclut du compteur
+# pour eviter une fausse alerte rouge lors des tests en VM.
+_IGNORED_FAILED_UNITS = {"mcelog.service"}
+
+
+def _count_failed_services(stdout):
+    """Compte les services en echec, hors artefacts de VM connus."""
+    count = 0
+    for line in stdout.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        if line.split()[0] in _IGNORED_FAILED_UNITS:
+            continue
+        count += 1
+    return count
+
 
 def _tool_available(name):
     try:
@@ -68,7 +86,7 @@ def _check_system():
             ["systemctl", "--failed", "--no-legend", "--no-pager", "--plain"],
             capture_output=True, text=True, timeout=3,
         )
-        checks["failed_services"] = sum(1 for line in r.stdout.splitlines() if line.strip())
+        checks["failed_services"] = _count_failed_services(r.stdout)
     except Exception:
         checks["failed_services"] = None
     return checks
