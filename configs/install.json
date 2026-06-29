@@ -2,7 +2,6 @@
   "packages": [
     { "name": "meld", "description": "Visual diff and merge tool" },
     { "name": "flameshot", "description": "Powerful screenshot utility" },
-    { "name": "mpv", "description": "Lightweight media player" },
     { "name": "gparted", "description": "Disk partition editor" },
     { "name": "git", "description": "Version control system" },
     { "name": "ncdu", "description": "Disk usage analyzer with ncurses interface" },

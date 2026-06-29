@@ -40,7 +40,7 @@ bp = Blueprint("profiles", __name__)
 # Nobara ils viennent des depots curatos, mais sur Fedora ils echouent tant que
 # RPM Fusion n'est pas active. Le preflight previent l'utilisateur.
 _RPMFUSION_ONLY = {
-    "steam", "vlc", "kodi", "kodi-inputstream-adaptive", "HandBrake-gui",
+    "steam", "vlc", "HandBrake-gui",
 }
 
 PROFILE_ORDER = ["base", "office", "communication", "gaming", "htpc", "handheld", "dev", "multimedia", "docker", "distrobox", "amd", "nvidia", "privacy", "vpn", "browsers", "system"]

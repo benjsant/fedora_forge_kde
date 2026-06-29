@@ -33,7 +33,8 @@ class Theme(BaseModel):
 class ThemeList(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True, extra='forbid')
 
-    themes: list[Theme] = Field(..., min_length=1)
+    # min_length non impose : un catalogue peut etre vide (ex. themes GTK retires).
+    themes: list[Theme] = Field(...)
 
     @field_validator('themes')
     @classmethod
