@@ -9,7 +9,7 @@
     { "name": "inxi", "description": "Informations systeme completes (terminal)" },
     { "name": "ncdu", "description": "Analyseur d'espace disque en mode terminal" },
     { "name": "filelight", "description": "Analyseur d'espace disque graphique KDE" },
-    { "name": "kdeconnect", "description": "Integration telephone Android (fichiers, notifs, clipboard)" },
+    { "name": "kdeconnectd", "description": "Integration telephone Android (fichiers, notifs, clipboard)" },
     { "name": "scrcpy", "description": "Mirroring et controle Android depuis le PC" },
     { "name": "lshw", "description": "Inventaire detaille du materiel" },
     { "name": "hplip-gui", "description": "Interface graphique pilotes imprimantes HP" },

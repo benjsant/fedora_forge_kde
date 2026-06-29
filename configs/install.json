@@ -16,7 +16,7 @@
     { "name": "kvantum", "description": "SVG-based theme engine for Qt" },
     { "name": "kate", "description": "KDE advanced text editor" },
     { "name": "yakuake", "description": "Drop-down terminal emulator" },
-    { "name": "kdeconnect", "description": "Connect phone to KDE desktop" },
+    { "name": "kdeconnectd", "description": "Connect phone to KDE desktop" },
     { "name": "filelight", "description": "Disk usage visualizer" },
     { "name": "papirus-icon-theme", "description": "Papirus icon theme (Linux standard)" }
   ]
