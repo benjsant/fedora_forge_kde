@@ -126,7 +126,7 @@ fedora_kde_forge/
 │   ├── state_routes.py      # /api/state/* (rollback)
 │   ├── fedora_wizards.py    # /api/fedora/* : RPM Fusion, codecs, NVIDIA, Flathub (faits)
 │   ├── selinux.py           # /api/selinux/* : assistant SELinux (status, diagnostic AVC, toggle booleans)
-│   └── tweaks.py            # /api/tweaks/* (reset plasma, services systemd, audio PipeWire/BT, sysctls gaming, scheduler sched-ext)
+│   └── tweaks.py            # /api/tweaks/* (reset plasma, services systemd, audio PipeWire/BT, sysctls gaming, scheduler sched-ext, menu admin Dolphin)
 │
 ├── scripts/                 # Logique d'installation (appeles par les routes)
 │   ├── __init__.py
@@ -153,6 +153,7 @@ fedora_kde_forge/
 │   ├── audio_tweaks.py      # PipeWire sample rate + codecs BT premium (drop-in user-level, atomic write)
 │   ├── sysctl_tweaks.py     # Sysctls gaming (drop-in /etc/sysctl.d/, sudo via tee/rm + sysctl --system)
 │   ├── sched_ext.py         # Scheduler sched-ext gaming (scx_lavd) sur kernel Fedora standard, unit systemd geree
+│   ├── admin_menu.py        # Menu Dolphin "Ouvrir en tant qu'administrateur" (installe/retire kio-admin, comme Nobara)
 │   ├── selinux_manager.py   # Assistant SELinux : mode, booleans whitelistes (setsebool -P), denials AVC. Jamais setenforce 0
 │   └── system_info.py       # Detection identite Fedora (kernel vanilla, LSM, SELinux, btrfs, zram, cache 30s)
 │
@@ -192,6 +193,7 @@ fedora_kde_forge/
     ├── test_audio_tweaks.py       # Drop-in PipeWire/WirePlumber
     ├── test_sysctl_tweaks.py      # Drop-in sysctls gaming + route toggle
     ├── test_sched_ext.py          # Scheduler sched-ext : whitelist, unit, parsing sysfs, routes
+    ├── test_admin_menu.py         # Menu admin Dolphin (kio-admin) : status/enable/disable + routes
     ├── test_selinux.py            # Assistant SELinux : booleans whitelist + parsing + routes
     ├── test_system_info.py        # Parsing OS/kernel/btrfs/zram
     └── test_fedora_wizards.py     # RPM Fusion, codecs, NVIDIA, Flathub (faits)

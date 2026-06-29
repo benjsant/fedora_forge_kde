@@ -1139,6 +1139,44 @@
             loadAudioStatus();
             loadSysctls();
             loadScheduler();
+            loadAdminMenu();
+        }
+
+        function loadAdminMenu() {
+            const ctrl = document.getElementById('adminMenuControls');
+            if (!ctrl) return;
+            fetch('/api/tweaks/admin-menu')
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.success) { ctrl.innerHTML = '<div style="color: var(--text-muted);">Non disponible</div>'; return; }
+                    const on = data.installed;
+                    ctrl.innerHTML =
+                        '<div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">' +
+                          '<span style="font-weight: bold; color: ' + (on ? 'var(--success)' : 'var(--text-muted)') + ';">' +
+                            (on ? 'Installe' : 'Absent') + '</span>' +
+                          '<button class="btn-small" id="btnAdminMenuToggle" onclick="toggleAdminMenu(' + (on ? 'false' : 'true') + ')" ' +
+                            'style="border-color: ' + (on ? 'var(--danger)' : 'var(--success)') + '; color: ' + (on ? 'var(--danger)' : 'var(--success)') + ';">' +
+                            (on ? 'Desactiver' : 'Activer') + '</button>' +
+                        '</div>';
+                })
+                .catch(() => { ctrl.innerHTML = '<div style="color: var(--text-muted);">Non disponible</div>'; });
+        }
+
+        function toggleAdminMenu(enable) {
+            const btn = document.getElementById('btnAdminMenuToggle');
+            if (btn) { btn.disabled = true; btn.textContent = '...'; }
+            fetch('/api/tweaks/admin-menu/toggle', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ enable })
+            })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) showToast(data.message || 'Menu administrateur mis a jour', 'success');
+                    else showToast(data.error || 'Erreur', 'error');
+                    loadAdminMenu();
+                })
+                .catch(() => { showToast('Erreur reseau', 'error'); loadAdminMenu(); });
         }
 
         function loadScheduler() {

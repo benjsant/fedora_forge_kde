@@ -29,7 +29,9 @@ garde en enforcing** (Nobara, lui, desactive SELinux et passe sur AppArmor).
 - **Assistant SELinux** ([routes/selinux.py](../routes/selinux.py), [utils/selinux_manager.py](../utils/selinux_manager.py)) :
   diagnostic AVC lecture seule + booleans whitelistes. Jamais `setenforce 0`.
 - **Tweaks** ([routes/tweaks.py](../routes/tweaks.py)) : sysctls gaming + scheduler
-  **sched-ext** (`scx_lavd`) sur kernel Fedora standard (alternative sure au kernel CachyOS).
+  **sched-ext** (`scx_lavd`) sur kernel Fedora standard (alternative sure au kernel CachyOS)
+  + menu Dolphin "Ouvrir en tant qu'administrateur" ([utils/admin_menu.py](../utils/admin_menu.py),
+  installe `kio-admin` comme sur Nobara).
 - **Outils systeme** ([routes/fedora_tools.py](../routes/fedora_tools.py), `/api/tools/*`) :
   remplace l'ancien `nobara_tools` par Discover/systemsettings/etc.
 - **Garde RPM Fusion au preflight** ([routes/profiles.py](../routes/profiles.py)) :

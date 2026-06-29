@@ -205,6 +205,20 @@ else
 fi
 
 # =============================================================
+section "Menu admin Dolphin (kio-admin)"
+# =============================================================
+# Le menu clic droit "Ouvrir en tant qu'administrateur" vient du paquet KDE
+# officiel kio-admin (depots Fedora, pas de RPM Fusion requis).
+check "kio-admin disponible (repoquery)" \
+    'dnf repoquery --available kio-admin 2>/dev/null | grep -q kio-admin && echo ok' "ok"
+ka="$(rexec 'rpm -q kio-admin >/dev/null 2>&1 && echo installed || echo absent')"
+if [ "$ka" = "installed" ]; then
+    echo -e "  ${GREEN}PASS${RESET} kio-admin deja installe"; PASS=$((PASS+1))
+else
+    note_skip "kio-admin non installe (le tweak l'installerait)"
+fi
+
+# =============================================================
 section "Audit paquets des profils (disponibilite reelle)"
 # =============================================================
 # Verite terrain : pour chaque paquet 'apt' des profils, on demande a la VM s'il

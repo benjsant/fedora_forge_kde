@@ -2,6 +2,9 @@
 from flask import Blueprint, jsonify, request
 
 from routes.shared import log_error, log_info, log_success, log_warn
+from utils.admin_menu import disable as admin_menu_disable
+from utils.admin_menu import enable as admin_menu_enable
+from utils.admin_menu import status as admin_menu_status
 from utils.audio_tweaks import (
     ALLOWED_RATES,
     bt_premium_codecs_enabled,
@@ -173,3 +176,22 @@ def scheduler_toggle():
         return jsonify({"success": False, "error": msg}), 400
     log_success(msg)
     return jsonify({"success": True, "active": enable, "message": msg, **scx_status()})
+
+
+# --------- Menu Dolphin "Ouvrir en tant qu'administrateur" (kio-admin) ---------
+
+@bp.route('/api/tweaks/admin-menu')
+def admin_menu():
+    return jsonify({"success": True, **admin_menu_status()})
+
+
+@bp.route('/api/tweaks/admin-menu/toggle', methods=['POST'])
+def admin_menu_toggle():
+    data = request.get_json(silent=True) or {}
+    enable = bool(data.get("enable", False))
+    ok, msg = admin_menu_enable() if enable else admin_menu_disable()
+    if not ok:
+        log_error(f"Menu administrateur : {msg}")
+        return jsonify({"success": False, "error": msg}), 500
+    log_success(msg)
+    return jsonify({"success": True, "message": msg, **admin_menu_status()})
