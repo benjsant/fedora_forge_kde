@@ -56,7 +56,7 @@ def _count_failed_services(stdout):
 
 def _tool_available(name):
     try:
-        return subprocess.run(["which", name], capture_output=True).returncode == 0
+        return subprocess.run(["which", name], capture_output=True, timeout=3).returncode == 0
     except Exception:
         return False
 
