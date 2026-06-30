@@ -47,6 +47,25 @@ les manquants = paquets Nobara-only/RPM Fusion/COPR a sourcer autrement).
 - L'audit paquets depend des repos actifs sur la VM : le lancer **avant ET apres**
   `--mutate` pour distinguer "necessite RPM Fusion" de "introuvable partout".
 
+## container-pkg-audit.sh (a lancer SUR l'hote, sans VM)
+
+Audit de **resolution des paquets DNF** dans un conteneur Fedora jetable (podman) :
+`./tools/container-pkg-audit.sh [--fedora N] [--no-rpmfusion]`. Attrape la classe
+de bugs "paquet inexistant/renomme sur Fedora" que les tests mockes + la CI ne
+voient pas (vecu : `kdeconnect`->`kdeconnectd`, `mesa-vdpau-drivers-freeworld`
+absent de RPM Fusion).
+
+- Couvre : `apt[]` de tous les profils + install.json + optional_install.json +
+  paquets DNF des wizards (codecs, NVIDIA, lus par AST sans importer Flask) +
+  variantes mesa freeworld.
+- Toute la logique d'ensemble tourne **dans le conteneur** (locale unique, pas de
+  mismatch hote/conteneur). Classe chaque manquant en **FAIL** (introuvable, echec
+  install garanti) vs **WARN** (nom obsolete mais resolu via Provides, ex
+  `wget`->`wget2`, `p7zip`->`7zip`).
+- Exit 1 seulement sur un vrai FAIL. **Ne teste PAS** SELinux/sched-ext/akmod/
+  runtime -> ca reste le boulot de la VM. C'est le filet "80% des bugs de
+  packaging" a lancer avant la VM.
+
 ## Si tu pilotes toi-meme (assistant)
 
 Demander a l'utilisateur la cible `user@ip` (et le port si != 22), puis lancer le
