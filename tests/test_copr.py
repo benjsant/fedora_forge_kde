@@ -64,3 +64,39 @@ def test_validation_globale_inclut_copr():
     results = validate_all_configs(str(ROOT / "configs"))
     assert "copr.json" in results
     assert results["copr.json"] is not None
+
+
+# --- Routes /api/copr ---
+
+@pytest.fixture
+def client():
+    import os
+    os.chdir(ROOT)
+    from web_app import app
+    app.config["TESTING"] = True
+    c = app.test_client()
+    c.environ_base["HTTP_HOST"] = "localhost:5000"
+    c.environ_base["HTTP_ORIGIN"] = "http://localhost:5000"
+    return c
+
+
+def test_route_copr_list(client):
+    r = client.get("/api/copr")
+    assert r.status_code == 200
+    data = r.get_json()
+    assert data["success"] is True
+    assert data["warning"]
+    assert any("/" in c["id"] for c in data["copr"])
+
+
+def test_route_copr_enable_requiert_confirmation(client):
+    r = client.post("/api/copr/enable", json={"id": "atim/lazygit", "confirmed": False})
+    assert r.status_code == 400
+    assert "Confirmation" in r.get_json()["error"]
+
+
+def test_route_copr_enable_rejette_id_hors_catalogue(client):
+    # whitelist stricte : meme confirme, un id absent du catalogue est refuse
+    r = client.post("/api/copr/enable", json={"id": "pirate/malware", "confirmed": True})
+    assert r.status_code == 400
+    assert "non autorise" in r.get_json()["error"]

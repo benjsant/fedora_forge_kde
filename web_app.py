@@ -6,6 +6,7 @@ import sys
 from flask import Flask, render_template
 
 from routes import (
+    copr,
     fedora_tools,
     fedora_wizards,
     kde_settings,
@@ -44,6 +45,7 @@ app.register_blueprint(fedora_tools.bp)
 app.register_blueprint(fedora_wizards.bp)
 app.register_blueprint(selinux.bp)
 app.register_blueprint(tweaks.bp)
+app.register_blueprint(copr.bp)
 
 
 @app.route('/')

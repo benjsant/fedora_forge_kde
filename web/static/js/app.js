@@ -71,6 +71,7 @@
             loadKdeOptions();
             loadKdeBackups();
             loadTweaks();
+            loadCopr();
             loadHistory();
             loadSelinux();
             loadFirewall();
@@ -1147,6 +1148,59 @@
         // =============================================
         // TWEAKS RAPIDES (Plasma reset, services, audio)
         // =============================================
+        let _coprData = [];
+
+        function loadCopr() {
+            const warn = document.getElementById('coprWarning');
+            const list = document.getElementById('coprList');
+            if (!list) return;
+            api('/api/copr')
+                .then(data => {
+                    if (!data.success) {
+                        if (warn) warn.textContent = 'Catalogue COPR indisponible.';
+                        list.innerHTML = '';
+                        return;
+                    }
+                    if (warn) warn.textContent = data.warning || '';
+                    _coprData = data.copr || [];
+                    renderCoprButtons();
+                })
+                .catch(() => { if (warn) warn.textContent = 'Erreur reseau.'; });
+        }
+
+        function renderCoprButtons() {
+            const list = document.getElementById('coprList');
+            if (!list) return;
+            const ackEl = document.getElementById('coprAck');
+            const ack = ackEl && ackEl.checked;
+            if (!_coprData.length) {
+                list.innerHTML = '<div style="color: var(--text-muted);">Aucun depot dans le catalogue.</div>';
+                return;
+            }
+            list.innerHTML = _coprData.map(c =>
+                '<div style="border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin-bottom: 10px;">' +
+                  '<div style="font-weight: bold;">' + esc(c.id) + '</div>' +
+                  '<div style="font-size: 0.85em; color: var(--text-muted); margin: 4px 0;">' + esc(c.description) + '</div>' +
+                  (c.danger ? '<div style="font-size: 0.82em; color: var(--danger); margin: 4px 0;">⚠ ' + esc(c.danger) + '</div>' : '') +
+                  '<div style="font-size: 0.78em; color: var(--text-muted);">Paquets : ' + esc((c.packages || []).join(', ')) + '</div>' +
+                  '<button class="btn-small" onclick="enableCopr(\'' + esc(c.id) + '\')" ' + (ack ? '' : 'disabled') +
+                    ' style="margin-top: 8px; border-color: var(--danger); color: var(--danger);">Activer + installer</button>' +
+                '</div>'
+            ).join('');
+        }
+
+        function enableCopr(id) {
+            showConfirm('Activer un depot tiers',
+                'Activer ' + id + ' et installer ses paquets ? Depot non maintenu par Fedora, a vos risques.',
+                () => {
+                    showToast('Activation de ' + id + '...', 'info');
+                    api('/api/copr/enable', { body: { id, confirmed: true, install: true } })
+                        .then(data => showToast(data.success ? (data.message || 'COPR active') : (data.error || 'Erreur'),
+                                                data.success ? 'success' : 'error'))
+                        .catch(() => showToast('Erreur reseau', 'error'));
+                }, true);
+        }
+
         function loadTweaks() {
             loadServices();
             loadAudioStatus();
