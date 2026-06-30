@@ -4,7 +4,7 @@ Document vivant : a lire en debut de session pour savoir ou en est le projet, ce
 qui est valide, ce qui reste. Le guide technique de reference reste [CLAUDE.md](../CLAUDE.md).
 Mettre a jour ce fichier quand une etape majeure change.
 
-Derniere mise a jour : 2026-06-28.
+Derniere mise a jour : 2026-06-30.
 
 ## En une phrase
 
@@ -40,23 +40,35 @@ garde en enforcing** (Nobara, lui, desactive SELinux et passe sur AppArmor).
 - **Outils systeme** ([routes/fedora_tools.py](../routes/fedora_tools.py), `/api/tools/*`) :
   remplace l'ancien `nobara_tools` par Discover/systemsettings/etc.
 - **Garde RPM Fusion au preflight** ([routes/profiles.py](../routes/profiles.py)) :
-  avertit si un profil contient un paquet RPM Fusion-only (steam, vlc, kodi,
-  kodi-inputstream-adaptive, HandBrake-gui) et que RPM Fusion est inactif.
+  avertit si un profil contient un paquet RPM Fusion-only (steam, vlc, HandBrake-gui)
+  et que RPM Fusion est inactif. (kodi retire des profils ; `_RPMFUSION_ONLY` ajuste.)
 - **Rebranding complet** Nobara -> Fedora (entrypoints, profils, suppression du
   fallback nobara-updater).
 - **Launcher** [fedoraforgeKDE.sh](../fedoraforgeKDE.sh) : venv jetable + pip (run-once,
   rien laisse sur le systeme), supprime a la sortie. Plus de uv.
 - **CI** GitHub Actions verte (matrix Python 3.10-3.13).
 - **Outils de test VM** ([tools/](../tools/)) : voir [tools/CLAUDE.md](../tools/CLAUDE.md).
+- **Harnais paquets en conteneur** ([tools/container-pkg-audit.sh](../tools/container-pkg-audit.sh)) :
+  audite la resolution DNF de tous les paquets dans un conteneur Fedora jetable
+  (podman), SANS VM. Classe FAIL (introuvable) vs WARN (renomme, resolu via Provides).
+- **Catalogue COPR experimental** ([configs/copr.json](../configs/copr.json),
+  [routes/copr.py](../routes/copr.py), `/api/copr`) : depots tiers opt-in (lazygit,
+  kernel CachyOS) avec disclaimer obligatoire + whitelist + confirmation. Schema
+  [schemas/copr.py](../schemas/copr.py).
+- **Qualite** (session 2026-06-30) : helper frontend `api()` ([web/static/js/app.js](../web/static/js/app.js),
+  centralise les fetch ; section Tweaks migree, reste a finir) ; `log_exc()`
+  ([routes/shared.py](../routes/shared.py), traceback au fichier sur les `except`
+  des threads d'install) ; `themes_install` n'applique plus rien (install seul).
 
-Etat tests : ~192 pytest verts, ruff clean.
+Etat tests : 251 pytest verts, ruff clean.
 
 ## Ce qui est VALIDE vs PAS ENCORE
 
 - VALIDE : logique Python (tests mockes), CI, validation Pydantic des 16 profils,
   syntaxe bash.
 - VALIDE EN VM Fedora 44 KDE reelle (campagne 2026-06-29, SELinux enforcing) :
-  - `--all` complet (MAJ systeme + 24 paquets + VS Code + nettoyage 15 paquets + flatpaks + themes) ;
+  - `--all` complet (MAJ systeme + ~24 paquets + VS Code + nettoyage 15 paquets + flatpaks ;
+    themes desormais exclus de `--all`, opt-in) ;
   - wizards **RPM Fusion** (free+nonfree), **codecs** (swap ffmpeg-free -> ffmpeg-libs), **NVIDIA akmod** (resolution) ;
   - flatpaks (install systeme via sudo), themes (Orchis/Sweet/Layan/Catppuccin/Tela/Bibata/phinger).
   - Bugs trouves ET corriges : `sudo -v` non-tty dans `--all`, `run_sudo_command(cwd=)`,
@@ -71,23 +83,44 @@ Etat tests : ~192 pytest verts, ruff clean.
 - **PAS ENCORE** : NVIDIA reel (compilation akmod + boot) non testable sur VM sans
   GPU NVIDIA.
 
-## Prochaines actions (par priorite)
+## Prochaines actions (par priorite) - reprise session
 
-1. **Valider en VM Fedora 44** : `tools/vm-enable-ssh.sh` dans la VM, puis
-   `tools/vm-test-harness.sh user@ip` (et `--mutate` apres snapshot). Voir [tools/CLAUDE.md](../tools/CLAUDE.md).
-2. **Paquets incertains** a confirmer via l'audit du harnais (section "Audit paquets profils") :
-   `mkvtoolnix-gui`, `goverlay`, `ffmpegthumbnailer`, `lazygit`, `tealdeer`, `corectrl`.
-   S'ils manquent sur Fedora : les ajouter a `_RPMFUSION_ONLY` dans [routes/profiles.py](../routes/profiles.py)
-   ou basculer en Flatpak/COPR.
-2b. **`scx-scheds` (wizard sched-ext)** : confirmer qu'il est dans les depots
-   officiels Fedora 44. Sur la machine de dev Nobara il venait du repo tiers `terra`.
-   Le wizard echoue proprement s'il est introuvable, mais si stock Fedora ne l'a pas,
-   prevoir un COPR. Le harnais le verifie (section sched-ext, repoquery).
-3. Optionnel : wizard ROCm (calcul AMD pour l'IA ; support RRDNA2/680M faible, basse priorite).
-4. Cosmetique : unifier le nommage `fedorakdeforge` (lockfile/backups) vs `fedoraforgekde`
-   (sudoers/launcher).
-5. Non implemente, deconseille : wizard kernel CachyOS (seul capable de briquer le boot ;
-   preferer le toggle sched-ext deja en place). Details dans [CLAUDE.md](../CLAUDE.md) section Phase 2.
+1. **Finir la migration frontend `api()`** : seul la section Tweaks est migree
+   (~56 `fetch()` restants, uniformes). Mecanique, mais **a faire navigateur ouvert**
+   (pas de tests JS -> smoke-test visuel obligatoire pour eviter une regression
+   silencieuse). Pattern : `fetch(u).then(r=>r.json())` -> `api(u)` ; POST JSON ->
+   `api(u, {body:{...}})` (retirer le `.then(r=>r.json())`).
+2. **Tester la route COPR en reel** : `dnf copr enable -y` via [routes/copr.py](../routes/copr.py)
+   n'a PAS ete execute. Verifier que `-y` supprime bien le prompt de confirmation
+   COPR sur dnf5 (sinon `_stream_sudo` n'a pas de stdin -> risque de hang). Tester
+   `atim/lazygit` en conteneur/VM (snapshot d'abord).
+3. **nodejs / npm** (WARN de l'audit conteneur) : `dnf install nodejs npm` resout via
+   Provides mais `npm` a 3 fournisseurs (nodejs20/22/24-npm, ambigu). Confirmer que
+   ca s'installe proprement sur F44, sinon epingler une version dans
+   [configs/profiles/dev.json](../configs/profiles/dev.json).
+4. **scrcpy** retire de [configs/profiles/system.json](../configs/profiles/system.json)
+   (absent de Fedora/RPM Fusion) : re-sourcer via un COPR de confiance ou un Flatpak
+   (mirroring Android). Decision utilisateur.
+5. **Lancer `tools/container-pkg-audit.sh` regulierement** (remplace la verif
+   manuelle des "paquets incertains") et idealement l'ajouter en **CI non-bloquant**
+   (job avec un conteneur Fedora). Dernier run : 0 FAIL, WARN nodejs/npm.
+6. **`scx-scheds`** (wizard sched-ext) : confirmer le depot officiel F44 (venait du
+   repo tiers `terra` sur la Nobara de dev). Sinon -> ajouter au catalogue COPR.
+7. Cosmetique : unifier le nommage `fedorakdeforge` (lockfile/backups) vs
+   `fedoraforgekde` (sudoers/launcher).
+8. Optionnel : wizard ROCm (calcul AMD pour l'IA, basse priorite). Kernel CachyOS :
+   desormais dans le catalogue COPR (opt-in, danger boot documente) ; preferer le
+   toggle sched-ext.
+
+## Etat VM / reprise
+
+VM de validation : `ssh cobaye@192.168.122.200` (Fedora 44 KDE, NOPASSWD sudo).
+Apres la campagne du 2026-06-29/30 elle est **fortement modifiee** (RPM Fusion,
+codecs, flatpaks, paquets) : **restaurer le snapshot clean** avant de reprendre.
+Pour piloter l'app graphiquement par SSH (navigateur sur l'ecran VM), il faut
+injecter l'env de session depuis plasmashell (`/proc/<pid>/environ` :
+WAYLAND_DISPLAY/DISPLAY/DBUS_SESSION_BUS_ADDRESS/XDG_RUNTIME_DIR) - les tweaks
+user-level (panneau, dolphin) et le lancement du navigateur en dependent.
 
 ## Historique des PR
 
