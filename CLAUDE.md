@@ -166,6 +166,7 @@ fedora_kde_forge/
 ├── schemas/                 # Modeles Pydantic (extra='forbid')
 │   ├── __init__.py
 │   ├── packages.py, flatpak.py, external.py, themes.py, profile.py
+│   ├── copr.py              # Catalogue COPR experimental (depots tiers) + avertissement obligatoire
 │
 ├── configs/                 # Fichiers JSON de configuration
 │   ├── install.json         # Paquets RPM a installer
@@ -175,6 +176,7 @@ fedora_kde_forge/
 │   ├── optional_install.json
 │   ├── themes_gtk.json, themes_icons.json, themes_cursors.json, themes_kvantum.json
 │   ├── theme_config_recommended.json
+│   ├── copr.json            # Depots COPR experimentaux (lazygit, kernel CachyOS) + disclaimer "a vos risques"
 │   └── profiles/            # 16 profils adaptes Fedora
 │       ├── base.json, gaming.json, dev.json, multimedia.json, office.json
 │       ├── docker.json, distrobox.json, browsers.json, privacy.json
@@ -205,7 +207,8 @@ fedora_kde_forge/
     ├── test_dolphin_tweaks.py     # Dolphin home au demarrage : status, set_home_on_startup, routes
     ├── test_selinux.py            # Assistant SELinux : booleans whitelist + parsing + routes
     ├── test_system_info.py        # Parsing OS/kernel/btrfs/zram
-    └── test_fedora_wizards.py     # RPM Fusion, codecs, NVIDIA, Flathub (faits)
+    ├── test_fedora_wizards.py     # RPM Fusion, codecs, NVIDIA, Flathub (faits)
+    └── test_copr.py               # Catalogue COPR : schema, disclaimer obligatoire, validation globale
 ```
 
 ## Specificites Fedora a implementer (Phase 2)

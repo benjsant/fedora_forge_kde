@@ -1,0 +1,19 @@
+{
+  "experimental_warning": "EXPERIMENTAL - A VOS RISQUES ET PERILS. Ces depots COPR sont maintenus par des PARTICULIERS, pas par Fedora ni par RPM Fusion, et leurs paquets ne sont PAS audites. Un COPR peut etre abandonne du jour au lendemain, livrer un paquet casse, briser une mise a jour systeme, voire (cas d'un kernel) empecher le demarrage. C'est globalement PLUS risque que RPM Fusion (qui est, lui, une organisation etablie). N'activez un COPR que si vous comprenez ce que vous faites et acceptez d'en assumer seul les consequences. Snapshot (timeshift) fortement recommande avant toute activation.",
+  "copr": [
+    {
+      "id": "atim/lazygit",
+      "description": "lazygit : interface terminal (TUI) pour git - commits, branches, stash, rebase interactif. Absent des depots Fedora et RPM Fusion.",
+      "packages": ["lazygit"],
+      "url": "https://copr.fedorainfracloud.org/coprs/atim/lazygit/",
+      "danger": ""
+    },
+    {
+      "id": "bieszczaders/kernel-cachyos",
+      "description": "Kernel CachyOS : ordonnanceur BORE + optimisations latence (gaming/desktop). Alternative AVANCEE au toggle sched-ext deja propose par l'app.",
+      "packages": ["kernel-cachyos", "kernel-cachyos-devel-matched"],
+      "url": "https://copr.fedorainfracloud.org/coprs/bieszczaders/kernel-cachyos/",
+      "danger": "PEUT EMPECHER LE DEMARRAGE. Kernel non signe Fedora : avec Secure Boot -> 'bad shim signature' (signature MOK requise). Avec NVIDIA + Secure Boot -> le module peut ne pas charger (no boot). Snapshot + test en VM OBLIGATOIRES. Deconseille : preferez le toggle sched-ext (scx_lavd) integre."
+    }
+  ]
+}
