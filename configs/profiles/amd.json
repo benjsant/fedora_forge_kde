@@ -5,8 +5,7 @@
   "apt": [
     { "name": "mesa-vulkan-drivers", "description": "Pilotes Vulkan Mesa RADV (base Fedora)" },
     { "name": "mesa-vulkan-drivers.i686", "description": "Pilotes Vulkan Mesa 32-bit" },
-    { "name": "mesa-va-drivers", "description": "Decodage video VA-API (base, codecs libres)" },
-    { "name": "mesa-vdpau-drivers", "description": "Decodage video VDPAU (base, codecs libres)" },
+    { "name": "mesa-dri-drivers", "description": "Pilotes DRI Mesa + decodage VA-API/VDPAU (codecs libres ; remplace mesa-va/vdpau-drivers)" },
     { "name": "vulkan-loader", "description": "Loader Vulkan" },
     { "name": "vulkan-loader.i686", "description": "Loader Vulkan 32-bit" },
     { "name": "vulkan-tools", "description": "Outils Vulkan (vulkaninfo)" },

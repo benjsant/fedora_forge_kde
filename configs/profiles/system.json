@@ -10,10 +10,9 @@
     { "name": "ncdu", "description": "Analyseur d'espace disque en mode terminal" },
     { "name": "filelight", "description": "Analyseur d'espace disque graphique KDE" },
     { "name": "kdeconnectd", "description": "Integration telephone Android (fichiers, notifs, clipboard)" },
-    { "name": "scrcpy", "description": "Mirroring et controle Android depuis le PC" },
     { "name": "lshw", "description": "Inventaire detaille du materiel" },
     { "name": "hplip-gui", "description": "Interface graphique pilotes imprimantes HP" },
-    { "name": "partitionmanager", "description": "Editeur de partitions KDE natif (alternative Qt a gparted)" }
+    { "name": "kde-partitionmanager", "description": "Editeur de partitions KDE natif (alternative Qt a gparted)" }
   ],
   "flatpak": [
     { "app": "org.raspberrypi.rpi-imager", "description": "Outil de creation de cartes SD Raspberry Pi" }

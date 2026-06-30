@@ -7,7 +7,7 @@
     { "name": "ncdu", "description": "Disk usage analyzer with ncurses interface" },
     { "name": "lshw", "description": "Hardware lister utility" },
     { "name": "curl", "description": "Command line data transfer tool" },
-    { "name": "wget", "description": "Network downloader" },
+    { "name": "wget2", "description": "Network downloader (wget2, remplace wget sur Fedora recent)" },
     { "name": "sassc", "description": "SASS compiler" },
     { "name": "fira-code-fonts", "description": "Fira Code programming font" },
     { "name": "dejavu-fonts-all", "description": "DejaVu font family" },

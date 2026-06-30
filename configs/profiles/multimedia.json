@@ -6,7 +6,7 @@
     { "name": "celluloid", "description": "Lecteur video GTK (backend mpv)" },
     { "name": "yt-dlp", "description": "Telechargeur YouTube et 1000+ plateformes" },
     { "name": "ffmpegthumbnailer", "description": "Miniatures video dans Dolphin" },
-    { "name": "elisa", "description": "Lecteur musical KDE elegant" },
+    { "name": "elisa-player", "description": "Lecteur musical KDE elegant" },
     { "name": "pavucontrol", "description": "Controle de volume avance PipeWire/PulseAudio" },
     { "name": "krita", "description": "Peinture et dessin numerique (KDE natif)" },
     { "name": "kdenlive", "description": "Montage video non lineaire (KDE natif)" },
