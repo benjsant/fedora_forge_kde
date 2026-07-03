@@ -51,16 +51,22 @@ def _origin_host_ok(value, port):
 
 
 def register_security(app, port=DEFAULT_PORT):
-    """Enregistre les middlewares Flask de protection CSRF/DNS-rebinding."""
+    """Enregistre les middlewares Flask de protection CSRF/DNS-rebinding.
 
+    `port` accepte un entier OU un callable sans argument : le callable permet
+    de suivre un port choisi tardivement (fallback si 5000 occupe), le check
+    validant alors toujours le port reellement ecoute."""
+
+    get_port = port if callable(port) else (lambda: port)
     safe_methods = {"GET", "HEAD", "OPTIONS"}
-    valid_hosts = _expected_host_values(port)
 
     @app.before_request
     def _check_host_and_origin():
+        current_port = get_port()
+
         # 1) Host check (toujours actif) — bloque DNS rebinding
         host = request.headers.get("Host", "")
-        if host not in valid_hosts:
+        if host not in _expected_host_values(current_port):
             return ("Host not allowed", 421)
 
         # 2) Pour les methodes mutatives : Origin/Referer doit matcher
@@ -73,7 +79,7 @@ def register_security(app, port=DEFAULT_PORT):
                 # contexte navigateur). On accepte uniquement les requetes
                 # web "normales" pour les actions mutatives.
                 return ("Origin or Referer header required for non-GET methods", 403)
-            if not _origin_host_ok(check_value, port):
+            if not _origin_host_ok(check_value, current_port):
                 return ("Cross-origin request rejected", 403)
 
         return None

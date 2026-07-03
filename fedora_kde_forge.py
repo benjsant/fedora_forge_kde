@@ -11,6 +11,7 @@ Usage:
 """
 
 import os
+import socket
 import subprocess
 import sys
 import threading
@@ -18,7 +19,29 @@ import time
 import webbrowser
 from pathlib import Path
 
-URL = "http://localhost:5000"
+DEFAULT_PORT = 5000
+
+
+def _resolve_port():
+    """Port souhaite : env FEDORAFORGEKDE_PORT, defaut 5000 (meme logique que web_app)."""
+    raw = os.environ.get("FEDORAFORGEKDE_PORT", str(DEFAULT_PORT))
+    try:
+        v = int(raw)
+        return v if 1024 <= v <= 65535 else DEFAULT_PORT
+    except (ValueError, TypeError):
+        return DEFAULT_PORT
+
+
+def _find_free_port(start, attempts=10):
+    """Premier port libre sur 127.0.0.1 a partir de `start`. None si aucun."""
+    for p in range(start, min(start + attempts, 65536)):
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.bind(("127.0.0.1", p))
+            return p
+        except OSError:
+            continue
+    return None
 
 _RED    = "\033[1;31m"
 _GREEN  = "\033[1;32m"
@@ -83,9 +106,9 @@ def check_env():
     return ok
 
 
-def open_browser():
+def open_browser(url):
     time.sleep(2)
-    webbrowser.open(URL)
+    webbrowser.open(url)
 
 
 def _run_cli(slugs, dry_run):
@@ -244,16 +267,26 @@ def main():
         _fail("Des dependances manquent. Corrigez les erreurs ci-dessus.")
         return 1
 
+    # Choisit le port ici pour ouvrir le navigateur sur la bonne URL, puis le
+    # transmet a web_app via l'env : les deux processus restent d'accord meme
+    # quand 5000 est occupe par un autre outil.
+    port = _find_free_port(_resolve_port())
+    if port is None:
+        _fail("Aucun port local libre trouve (plage 5000-5009 ou FEDORAFORGEKDE_PORT+9).")
+        return 1
+    os.environ["FEDORAFORGEKDE_PORT"] = str(port)
+    url = f"http://localhost:{port}"
+
     print()
     print("=" * 55)
     print("  FedoraForgeKDE — Lancement")
     print("=" * 55)
-    print(f"  URL   : {URL}")
+    print(f"  URL   : {url}")
     print("  Arret : CTRL+C")
     print("=" * 55)
     print()
 
-    threading.Thread(target=open_browser, daemon=True).start()
+    threading.Thread(target=open_browser, args=(url,), daemon=True).start()
 
     try:
         subprocess.run([sys.executable, str(web_app_path)])

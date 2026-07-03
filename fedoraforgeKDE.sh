@@ -250,7 +250,7 @@ echo -e "${BLUE}================================================${RESET}"
 echo -e "${GREEN}  FedoraForgeKDE pret - Lancement...${RESET}"
 echo -e "${BLUE}================================================${RESET}"
 echo ""
-info "URL: http://localhost:5000"
+info "URL: http://localhost:${FEDORAFORGEKDE_PORT:-5000} (port suivant si deja occupe)"
 info "Arret: CTRL+C"
 echo ""
 
