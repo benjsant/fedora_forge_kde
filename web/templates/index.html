@@ -530,6 +530,14 @@
         </div>
     </div>
 
-    <script src="/static/js/app.js"></script>
+    <!-- core.js en premier (helpers api/toast/confirm + bootstrap) ; les autres
+         modules declarent des fonctions globales appelees par les handlers inline. -->
+    <script src="/static/js/core.js"></script>
+    <script src="/static/js/profiles.js"></script>
+    <script src="/static/js/wizards.js"></script>
+    <script src="/static/js/tweaks.js"></script>
+    <script src="/static/js/themes.js"></script>
+    <script src="/static/js/kde.js"></script>
+    <script src="/static/js/system.js"></script>
 </body>
 </html>
