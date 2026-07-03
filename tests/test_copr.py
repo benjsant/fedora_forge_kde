@@ -100,3 +100,81 @@ def test_route_copr_enable_rejette_id_hors_catalogue(client):
     r = client.post("/api/copr/enable", json={"id": "pirate/malware", "confirmed": True})
     assert r.status_code == 400
     assert "non autorise" in r.get_json()["error"]
+
+
+@pytest.fixture
+def copr_sync(monkeypatch):
+    """Taches de fond synchrones + state manager factice pour la route COPR."""
+    from routes import copr as copr_routes
+    captured = {"records": [], "cmds": []}
+
+    def _sync(name, worker):
+        captured["name"] = name
+        captured["result"] = worker()
+        return True
+    monkeypatch.setattr(copr_routes, "start_background_task", _sync)
+
+    class _FakeState:
+        def record(self, action, target, success, rollback_cmd=None, metadata=None):
+            captured["records"].append((action, target, success, rollback_cmd, metadata))
+    monkeypatch.setattr(copr_routes, "get_state_manager", lambda: _FakeState())
+    return captured
+
+
+def _first_catalog_entry():
+    data = json.loads((ROOT / "configs/copr.json").read_text(encoding="utf-8"))
+    return data["copr"][0]
+
+
+def test_route_copr_enable_enregistre_le_rollback(client, monkeypatch, copr_sync):
+    """Succes : depot active + paquets installes, le tout trace pour rollback."""
+    from routes import copr as copr_routes
+    entry = _first_catalog_entry()
+    monkeypatch.setattr(copr_routes, "_stream_sudo",
+                        lambda cmd, timeout=None: copr_sync["cmds"].append(cmd) or 0)
+
+    r = client.post("/api/copr/enable",
+                    json={"id": entry["id"], "confirmed": True, "install": True})
+    assert r.status_code == 200
+    assert r.get_json()["started"] is True
+    assert copr_sync["result"] is True
+
+    # 2 commandes : copr enable puis dnf install des paquets
+    assert ["dnf", "copr", "enable", "-y", entry["id"]] == copr_sync["cmds"][0]
+    assert copr_sync["cmds"][1][:3] == ["dnf", "install", "-y"]
+
+    # Enregistrements : 1 copr_enable + 1 dnf_install par paquet, annulables
+    actions = [rec[0] for rec in copr_sync["records"]]
+    assert actions[0] == "copr_enable"
+    assert actions.count("dnf_install") == len(entry["packages"])
+    for _, _, success, rollback_cmd, _ in copr_sync["records"]:
+        assert success is True
+        assert rollback_cmd  # chaque entree doit etre annulable
+
+
+def test_route_copr_enable_echec_dnf_n_enregistre_pas_les_paquets(client, monkeypatch, copr_sync):
+    """Si l'install echoue, seuls le depot (deja actif) est trace, pas les paquets."""
+    from routes import copr as copr_routes
+    entry = _first_catalog_entry()
+
+    def _stream(cmd, timeout=None):
+        copr_sync["cmds"].append(cmd)
+        return 0 if cmd[1] == "copr" else 1  # enable ok, install echoue
+    monkeypatch.setattr(copr_routes, "_stream_sudo", _stream)
+
+    r = client.post("/api/copr/enable",
+                    json={"id": entry["id"], "confirmed": True, "install": True})
+    assert r.status_code == 200
+    assert copr_sync["result"] is False
+    actions = [rec[0] for rec in copr_sync["records"]]
+    assert actions == ["copr_enable"]
+
+
+def test_route_copr_enable_busy_renvoie_409(client, monkeypatch):
+    from routes import copr as copr_routes
+    entry = _first_catalog_entry()
+    monkeypatch.setattr(copr_routes, "start_background_task", lambda name, worker: False)
+
+    r = client.post("/api/copr/enable",
+                    json={"id": entry["id"], "confirmed": True})
+    assert r.status_code == 409

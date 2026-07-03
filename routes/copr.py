@@ -6,19 +6,34 @@ Securite :
 - Activation conditionnee a une confirmation explicite (`confirmed: true`) :
   l'utilisateur reconnait activer un depot tiers non audite par Fedora, a ses
   risques (cf. experimental_warning du catalogue).
+
+Rollback : l'activation du depot et chaque paquet installe sont enregistres
+dans le state manager (l'annulation retire les paquets puis desactive le depot,
+puisque rollback_all rejoue en ordre inverse).
 """
 import json
-from pathlib import Path
 
 from flask import Blueprint, jsonify, request
 
 from routes.fedora_wizards import _stream_sudo
-from routes.shared import log_error, log_info, log_success, log_warn
+from routes.shared import (
+    log_error,
+    log_info,
+    log_success,
+    log_warn,
+    start_background_task,
+)
 from schemas import CoprCatalog
+from utils.paths import PROJECT_ROOT
+from utils.state_manager import (
+    ACTION_COPR_ENABLE,
+    ACTION_DNF_INSTALL,
+    get_state_manager,
+)
 
 bp = Blueprint("copr", __name__)
 
-_CATALOG = Path("configs/copr.json")
+_CATALOG = PROJECT_ROOT / "configs" / "copr.json"
 _COPR_TIMEOUT = 900
 
 
@@ -44,9 +59,30 @@ def copr_list():
     })
 
 
+def _record_copr_enable(entry):
+    get_state_manager().record(
+        ACTION_COPR_ENABLE, entry.id, True,
+        rollback_cmd=["sudo", "dnf", "-y", "copr", "disable", entry.id],
+        metadata={"packages": list(entry.packages)},
+    )
+
+
+def _record_copr_packages(entry):
+    for pkg in entry.packages:
+        get_state_manager().record(
+            ACTION_DNF_INSTALL, pkg, True,
+            rollback_cmd=["sudo", "dnf", "remove", "-y", pkg],
+            metadata={"copr": entry.id},
+        )
+
+
 @bp.route('/api/copr/enable', methods=['POST'])
 def copr_enable():
-    """Active un COPR whiteliste (+ installe ses paquets). Confirmation requise."""
+    """Active un COPR whiteliste (+ installe ses paquets). Confirmation requise.
+
+    Le travail (dnf copr enable + dnf install) part en tache de fond : la
+    reponse revient tout de suite, la progression passe par les logs SSE et la
+    barre de tache, comme les wizards Fedora."""
     data = request.get_json(silent=True) or {}
     copr_id = (data.get("id") or "").strip()
     confirmed = bool(data.get("confirmed", False))
@@ -69,20 +105,26 @@ def copr_enable():
     if entry.danger:
         log_warn(f"[COPR] Risque : {entry.danger}")
 
-    rc = _stream_sudo(["dnf", "copr", "enable", "-y", entry.id], timeout=_COPR_TIMEOUT)
-    if rc != 0:
-        log_error(f"[COPR] Echec activation {entry.id}")
-        return jsonify({"success": False, "error": f"Echec activation COPR {entry.id}"}), 500
+    def worker():
+        if _stream_sudo(["dnf", "copr", "enable", "-y", entry.id],
+                        timeout=_COPR_TIMEOUT) != 0:
+            log_error(f"[COPR] Echec activation {entry.id}")
+            return False
+        _record_copr_enable(entry)
 
-    if do_install and entry.packages:
-        log_info(f"[COPR] Installation : {', '.join(entry.packages)}")
-        rc = _stream_sudo(["dnf", "install", "-y", *entry.packages], timeout=_COPR_TIMEOUT)
-        if rc != 0:
-            log_error(f"[COPR] Echec installation des paquets de {entry.id}")
-            return jsonify({"success": False,
-                            "error": f"COPR active mais installation echouee : {', '.join(entry.packages)}"}), 500
+        if do_install and entry.packages:
+            log_info(f"[COPR] Installation : {', '.join(entry.packages)}")
+            if _stream_sudo(["dnf", "install", "-y", *entry.packages],
+                            timeout=_COPR_TIMEOUT) != 0:
+                log_error(f"[COPR] Echec installation des paquets de {entry.id}")
+                return False
+            _record_copr_packages(entry)
 
-    log_success(f"[COPR] {entry.id} active"
-                + (f" + {', '.join(entry.packages)} installe(s)" if do_install else ""))
-    return jsonify({"success": True, "message": f"COPR {entry.id} active",
-                    "id": entry.id, "installed": do_install})
+        log_success(f"[COPR] {entry.id} active"
+                    + (f" + {', '.join(entry.packages)} installe(s)" if do_install else ""))
+        return True
+
+    if not start_background_task(f"Activation COPR {entry.id}", worker):
+        return jsonify({"success": False, "error": "Tache en cours"}), 409
+    return jsonify({"success": True, "started": True, "id": entry.id,
+                    "message": f"Activation COPR {entry.id} lancee (suivez les logs)"})
