@@ -13,7 +13,14 @@ import subprocess
 
 from flask import Blueprint, jsonify
 
-from routes.shared import log_error, log_info, log_success, log_warn, set_current_process
+from routes.shared import (
+    log_error,
+    log_info,
+    log_success,
+    log_warn,
+    set_current_process,
+    start_background_task,
+)
 from utils.system_info import _selinux_state
 
 bp = Blueprint("fedora_wizards", __name__)
@@ -111,11 +118,16 @@ def _stream_sudo(cmd, timeout=_ENABLE_TIMEOUT):
 
     Retourne le code retour (0 = succes). -1 si introuvable, -2 si timeout.
     Enregistre le process courant pour permettre l'annulation via /api/task/cancel.
+
+    stdin est ferme (DEVNULL) : si la commande pose quand meme une question
+    malgre -y (cas suspect : prompt de confirmation COPR sur dnf5), elle recoit
+    EOF et echoue immediatement au lieu de pendre jusqu'au timeout.
     """
     full = ["sudo", "-n", *cmd]
     try:
         process = subprocess.Popen(
-            full, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            full, stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
             text=True, bufsize=1,
         )
     except FileNotFoundError:
@@ -175,15 +187,17 @@ def rpmfusion_enable():
         log_warn("SELinux est en mode enforcing : certains paquets nonfree peuvent "
                  "generer des denials AVC. Surveillez journalctl -t setroubleshoot.")
 
-    rc = _stream_sudo(["dnf", "install", "-y", *urls])
-    if rc != 0:
-        log_error("Echec activation RPM Fusion")
-        return jsonify({"success": False,
-                        "error": "Echec de l'installation des paquets RPM Fusion"}), 500
+    def worker():
+        if _stream_sudo(["dnf", "install", "-y", *urls]) != 0:
+            log_error("Echec activation RPM Fusion")
+            return False
+        log_success("RPM Fusion active (free + nonfree)")
+        return True
 
-    log_success("RPM Fusion active (free + nonfree)")
-    return jsonify({"success": True, "message": "RPM Fusion active",
-                    **_rpmfusion_status()})
+    if not start_background_task("Activation RPM Fusion", worker):
+        return jsonify({"success": False, "error": "Tache en cours"}), 409
+    return jsonify({"success": True, "started": True,
+                    "message": "Activation RPM Fusion lancee (suivez les logs)"})
 
 
 def _codecs_status():
@@ -215,29 +229,35 @@ def codecs_install():
         return jsonify({"success": True, "already_installed": True,
                         "message": "Codecs deja installes", **status})
 
-    # Etape 1 (critique) : ffmpeg non libre + plugins GStreamer. --allowerasing
-    # pour le swap ffmpeg-free -> ffmpeg-libs. C'est ce qui apporte les codecs.
     log_info("Installation des codecs multimedia (ffmpeg + GStreamer)...")
-    if _stream_sudo(["dnf", "install", "-y", "--allowerasing", *_CODEC_PACKAGES],
-                    timeout=_CODEC_TIMEOUT) != 0:
-        log_error("Echec installation des codecs (ffmpeg + GStreamer)")
-        return jsonify({"success": False,
-                        "error": "Echec de l'installation des codecs multimedia"}), 500
 
-    # Etapes 2-3 (best effort) : mise a jour des groupes vers les variantes
-    # freeworld. Non bloquantes : sur un systeme ou le groupe n'est pas installe,
-    # ces commandes peuvent renvoyer non-zero sans que les codecs soient absents.
-    group_steps = [
-        ["dnf", "group", "upgrade", "-y", "multimedia",
-         "--setopt=install_weak_deps=False", "--exclude=PackageKit-gstreamer-plugin"],
-        ["dnf", "group", "upgrade", "-y", "sound-and-video"],
-    ]
-    for cmd in group_steps:
-        if _stream_sudo(cmd, timeout=_CODEC_TIMEOUT) != 0:
-            log_warn(f"Mise a jour de groupe non critique echouee : {' '.join(cmd[3:])}")
+    def worker():
+        # Etape 1 (critique) : ffmpeg non libre + plugins GStreamer. --allowerasing
+        # pour le swap ffmpeg-free -> ffmpeg-libs. C'est ce qui apporte les codecs.
+        if _stream_sudo(["dnf", "install", "-y", "--allowerasing", *_CODEC_PACKAGES],
+                        timeout=_CODEC_TIMEOUT) != 0:
+            log_error("Echec installation des codecs (ffmpeg + GStreamer)")
+            return False
 
-    log_success("Codecs multimedia installes")
-    return jsonify({"success": True, "message": "Codecs installes", **_codecs_status()})
+        # Etapes 2-3 (meilleur effort) : mise a jour des groupes vers les variantes
+        # freeworld. Non bloquantes : sur un systeme ou le groupe n'est pas installe,
+        # ces commandes peuvent renvoyer non-zero sans que les codecs soient absents.
+        group_steps = [
+            ["dnf", "group", "upgrade", "-y", "multimedia",
+             "--setopt=install_weak_deps=False", "--exclude=PackageKit-gstreamer-plugin"],
+            ["dnf", "group", "upgrade", "-y", "sound-and-video"],
+        ]
+        for cmd in group_steps:
+            if _stream_sudo(cmd, timeout=_CODEC_TIMEOUT) != 0:
+                log_warn(f"Mise a jour de groupe non critique echouee : {' '.join(cmd[3:])}")
+
+        log_success("Codecs multimedia installes")
+        return True
+
+    if not start_background_task("Installation codecs multimedia", worker):
+        return jsonify({"success": False, "error": "Tache en cours"}), 409
+    return jsonify({"success": True, "started": True,
+                    "message": "Installation des codecs lancee (suivez les logs)"})
 
 
 # --- Wizard NVIDIA proprietaire ---
@@ -305,14 +325,18 @@ def nvidia_install():
                  "pilote ne chargera pas. Voir mokutil --import apres compilation.")
     log_info("Le module akmod sera compile au prochain demarrage : patientez avant de redemarrer.")
 
-    if _stream_sudo(["dnf", "install", "-y", *_NVIDIA_PACKAGES], timeout=_NVIDIA_TIMEOUT) != 0:
-        log_error("Echec installation pilote NVIDIA")
-        return jsonify({"success": False,
-                        "error": "Echec de l'installation du pilote NVIDIA"}), 500
+    def worker():
+        if _stream_sudo(["dnf", "install", "-y", *_NVIDIA_PACKAGES],
+                        timeout=_NVIDIA_TIMEOUT) != 0:
+            log_error("Echec installation pilote NVIDIA")
+            return False
+        log_success("Pilote NVIDIA installe (redemarrage requis)")
+        return True
 
-    log_success("Pilote NVIDIA installe (redemarrage requis)")
-    return jsonify({"success": True, "message": "Pilote NVIDIA installe (redemarrage requis)",
-                    **_nvidia_status()})
+    if not start_background_task("Installation pilote NVIDIA", worker):
+        return jsonify({"success": False, "error": "Tache en cours"}), 409
+    return jsonify({"success": True, "started": True,
+                    "message": "Installation du pilote NVIDIA lancee (suivez les logs)"})
 
 
 # --- Wizard Flathub ---
@@ -360,10 +384,14 @@ def flathub_enable():
         log_info("Retrait du filtre Flathub (depot complet)...")
         cmd = ["flatpak", "remote-modify", "--no-filter", "--enable", "flathub"]
 
-    if _stream_sudo(cmd, timeout=_FLATPAK_TIMEOUT) != 0:
-        log_error("Echec activation Flathub")
-        return jsonify({"success": False,
-                        "error": "Echec de l'activation de Flathub"}), 500
+    def worker():
+        if _stream_sudo(cmd, timeout=_FLATPAK_TIMEOUT) != 0:
+            log_error("Echec activation Flathub")
+            return False
+        log_success("Flathub complet active")
+        return True
 
-    log_success("Flathub complet active")
-    return jsonify({"success": True, "message": "Flathub active", **_flathub_status()})
+    if not start_background_task("Activation Flathub", worker):
+        return jsonify({"success": False, "error": "Tache en cours"}), 409
+    return jsonify({"success": True, "started": True,
+                    "message": "Activation Flathub lancee (suivez les logs)"})
