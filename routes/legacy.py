@@ -8,7 +8,6 @@ import socket
 import subprocess
 import threading
 import time
-from pathlib import Path
 
 from flask import Blueprint, Response, jsonify
 
@@ -26,6 +25,7 @@ from routes.shared import (
     update_task_status,
 )
 from utils import system_update, timeshift_available
+from utils.paths import PROJECT_ROOT
 from utils.power import get_power_state
 from utils.system_info import gather as gather_system_info
 from utils.theme_manager import ThemeManager
@@ -95,18 +95,18 @@ def _check_system():
 
 def _get_package_counts():
     files = {
-        "dnf": "configs/install.json",
-        "optional": "configs/optional_install.json",
-        "flatpak": "configs/flatpak.json",
-        "external": "configs/external_packages.json",
-        "themes_gtk": "configs/themes_gtk.json",
-        "themes_icons": "configs/themes_icons.json",
-        "themes_cursors": "configs/themes_cursors.json",
+        "dnf": "install.json",
+        "optional": "optional_install.json",
+        "flatpak": "flatpak.json",
+        "external": "external_packages.json",
+        "themes_gtk": "themes_gtk.json",
+        "themes_icons": "themes_icons.json",
+        "themes_cursors": "themes_cursors.json",
     }
     counts = {}
     for key, path in files.items():
         try:
-            with open(path) as f:
+            with open(PROJECT_ROOT / "configs" / path) as f:
                 data = json.load(f)
             for list_key in ("packages", "flatpaks", "themes"):
                 if list_key in data:
@@ -156,7 +156,7 @@ def cancel_task():
 @bp.route('/api/logs/history')
 def logs_history():
     try:
-        log_file = Path("logs/fedoraforgekde.log")
+        log_file = PROJECT_ROOT / "logs" / "fedoraforgekde.log"
         if not log_file.exists():
             return jsonify({"lines": []})
         lines = log_file.read_text(errors="replace").splitlines()
@@ -287,7 +287,7 @@ def quit_app():
 def optional_list():
     """Liste les paquets optionnels avec leur statut d'installation."""
     try:
-        config_file = Path("configs/optional_install.json")
+        config_file = PROJECT_ROOT / "configs" / "optional_install.json"
         if not config_file.exists():
             return jsonify({"packages": []})
         with open(config_file, encoding="utf-8") as f:
@@ -304,7 +304,7 @@ def optional_list():
 @bp.route('/api/theme/status')
 def theme_status():
     try:
-        config_file = Path("configs/theme_config_recommended.json")
+        config_file = PROJECT_ROOT / "configs" / "theme_config_recommended.json"
         if not config_file.exists():
             return jsonify({"success": False, "error": "Fichier config introuvable"}), 404
         result = ThemeManager().check_recommended_config(config_file)
@@ -322,7 +322,7 @@ def apply_recommended_theme():
 
     def run():
         try:
-            config_file = Path("configs/theme_config_recommended.json")
+            config_file = PROJECT_ROOT / "configs" / "theme_config_recommended.json"
             if not config_file.exists():
                 log_error("Fichier config introuvable")
                 update_task_status("", False, 0)
