@@ -31,11 +31,12 @@ Hard fork du projet [nobara-kde-forge](https://github.com/benjsant/nobara-kde-fo
 .venv/bin/pytest tests/
 ```
 
-Interface web Flask sur `http://localhost:5000`.
+Interface web Flask sur `http://localhost:5000` (port par defaut ; si occupe, bascule automatique sur le port libre suivant, l'URL reelle est affichee au lancement).
 
 ### Variables d'environnement
 
 - `FEDORAFORGEKDE_SCRIPT_TIMEOUT` : timeout (secondes) des scripts d'installation lances via `/api/execute/*`. Defaut : 7200 (2h).
+- `FEDORAFORGEKDE_PORT` : port d'ecoute souhaite (defaut 5000). Si occupe, l'app glisse sur le premier port libre suivant (10 essais) et le check anti-DNS-rebinding suit le port reellement ecoute.
 
 ### Differences cles vs nobara-kde-forge
 
@@ -149,6 +150,7 @@ fedora_kde_forge/
 │   ├── security.py          # Anti-CSRF / anti-DNS-rebinding middleware Flask
 │   ├── sandbox.py           # bwrap wrapper + detection patterns dangereux
 │   ├── lockfile.py          # Lock file global (PID file + signal handlers)
+│   ├── paths.py             # PROJECT_ROOT : ancre tous les chemins configs/logs (plus de chemins relatifs au CWD)
 │   ├── power.py             # Detection batterie (sysfs) -> warning UI
 │   ├── kde_backup.py        # Backup/restore config KDE. MAX_BACKUPS=30.
 │   ├── plasma_tweaks.py     # Reset plasmashell + clear caches
@@ -187,7 +189,14 @@ fedora_kde_forge/
 │   ├── templates/index.html
 │   └── static/
 │       ├── css/style.css    # Palette bleu Fedora (#3c6eb4 primary) au lieu du violet Nobara
-│       └── js/app.js
+│       └── js/              # Modules charges dans l'ordre (core.js d'abord), fonctions globales
+│           ├── core.js      # Helper api(), toasts, confirm, barre de tache, logs SSE, Alpine forge(), bootstrap
+│           ├── profiles.js  # Grille profils, modal detail, preflight/dry-run, export/import
+│           ├── wizards.js   # RPM Fusion, codecs, NVIDIA, Flathub, COPR (taches de fond + refreshWizards)
+│           ├── tweaks.js    # Services, audio, sysctls, sched-ext, panneau, zram, admin menu, Dolphin
+│           ├── themes.js    # Catalogue de themes (onglets, install git)
+│           ├── kde.js       # Parametres KDE, mode sombre, backups config, ecran de connexion
+│           └── system.js    # Outils systeme, SELinux, pare-feu, paquets optionnels, historique/rollback
 │
 └── tests/                   # Tests pytest
     ├── test_schemas.py            # Validation Pydantic round-trip

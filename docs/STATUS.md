@@ -4,7 +4,7 @@ Document vivant : a lire en debut de session pour savoir ou en est le projet, ce
 qui est valide, ce qui reste. Le guide technique de reference reste [CLAUDE.md](../CLAUDE.md).
 Mettre a jour ce fichier quand une etape majeure change.
 
-Derniere mise a jour : 2026-06-30.
+Derniere mise a jour : 2026-07-03.
 
 ## En une phrase
 
@@ -55,12 +55,37 @@ garde en enforcing** (Nobara, lui, desactive SELinux et passe sur AppArmor).
   [routes/copr.py](../routes/copr.py), `/api/copr`) : depots tiers opt-in (lazygit,
   kernel CachyOS) avec disclaimer obligatoire + whitelist + confirmation. Schema
   [schemas/copr.py](../schemas/copr.py).
-- **Qualite** (session 2026-06-30) : helper frontend `api()` ([web/static/js/app.js](../web/static/js/app.js),
-  centralise les fetch ; section Tweaks migree, reste a finir) ; `log_exc()`
-  ([routes/shared.py](../routes/shared.py), traceback au fichier sur les `except`
-  des threads d'install) ; `themes_install` n'applique plus rien (install seul).
+- **Qualite** (session 2026-06-30) : `log_exc()` ([routes/shared.py](../routes/shared.py),
+  traceback au fichier sur les `except` des threads d'install) ; `themes_install`
+  n'applique plus rien (install seul).
+- **Frontend decoupe + migration `api()` finie** (session 2026-07-03) : app.js
+  (2321 lignes) remplace par 7 modules dans [web/static/js/](../web/static/js/)
+  (core/profiles/wizards/tweaks/themes/kde/system.js, charges dans l'ordre,
+  fonctions globales pour les handlers inline). Plus aucun `fetch()` hors du
+  helper `api()`. Smoke test navigateur fait (Firefox headless : rendu complet,
+  sections remplies, garde CSRF/Host verifiee sur port non standard).
+- **Wizards + COPR en taches de fond** (2026-07-03) : les routes d'action
+  (`rpmfusion/enable`, `codecs/install`, `nvidia/install`, `flathub/enable`,
+  `copr/enable`) repondent tout de suite (`started: true`) et travaillent dans
+  un thread via `start_background_task()` ([routes/shared.py](../routes/shared.py)) :
+  fini les requetes HTTP bloquees 15-30 min, et un wizard ne peut plus tourner
+  en meme temps qu'une install (slot de tache global, 409 sinon). Les badges UI
+  se rafraichissent a la fin de tache (`refreshWizards()`).
+- **COPR trace pour rollback** (2026-07-03) : `dnf copr enable` enregistre
+  `ACTION_COPR_ENABLE` (rollback `dnf copr disable`) et chaque paquet installe
+  est enregistre `ACTION_DNF_INSTALL` (metadata `{"copr": id}`) : l'historique
+  et le rollback couvrent desormais les depots tiers.
+- **`_stream_sudo` : stdin ferme (DEVNULL)** : si `dnf` pose une question
+  malgre `-y` (prompt COPR suspect sur dnf5), echec immediat au lieu d'un hang
+  de 15 min.
+- **Chemins ancres sur PROJECT_ROOT** ([utils/paths.py](../utils/paths.py)) :
+  routes/shared/legacy/themes/copr ne dependent plus du repertoire courant
+  (lancement possible depuis n'importe ou).
+- **Port configurable** : `FEDORAFORGEKDE_PORT` (defaut 5000) + bascule auto
+  sur le port libre suivant si occupe ; le check anti-DNS-rebinding suit le
+  port reel ; le launcher choisit le port et ouvre le navigateur dessus.
 
-Etat tests : 251 pytest verts, ruff clean.
+Etat tests : 260 pytest verts, ruff clean.
 
 ## Ce qui est VALIDE vs PAS ENCORE
 
@@ -85,15 +110,14 @@ Etat tests : 251 pytest verts, ruff clean.
 
 ## Prochaines actions (par priorite) - reprise session
 
-1. **Finir la migration frontend `api()`** : seul la section Tweaks est migree
-   (~56 `fetch()` restants, uniformes). Mecanique, mais **a faire navigateur ouvert**
-   (pas de tests JS -> smoke-test visuel obligatoire pour eviter une regression
-   silencieuse). Pattern : `fetch(u).then(r=>r.json())` -> `api(u)` ; POST JSON ->
-   `api(u, {body:{...}})` (retirer le `.then(r=>r.json())`).
-2. **Tester la route COPR en reel** : `dnf copr enable -y` via [routes/copr.py](../routes/copr.py)
-   n'a PAS ete execute. Verifier que `-y` supprime bien le prompt de confirmation
-   COPR sur dnf5 (sinon `_stream_sudo` n'a pas de stdin -> risque de hang). Tester
-   `atim/lazygit` en conteneur/VM (snapshot d'abord).
+1. **Tester la route COPR en reel** : `dnf copr enable -y` via [routes/copr.py](../routes/copr.py)
+   n'a PAS ete execute. Le risque de hang est ecarte (stdin=DEVNULL : echec
+   immediat si prompt), mais il faut confirmer que `-y` suffit sur dnf5 pour que
+   l'activation reussisse. Tester `atim/lazygit` en conteneur/VM (snapshot d'abord).
+   Verifier au passage le rollback (`dnf copr disable` + remove paquets).
+2. **Smoke test interactif du frontend decoupe** : le rendu headless est valide,
+   mais un clic reel sur chaque section (wizards asynchrones surtout : boutons
+   figes pendant la tache, badges rafraichis a la fin) reste a faire en VM.
 3. **nodejs / npm** (WARN de l'audit conteneur) : `dnf install nodejs npm` resout via
    Provides mais `npm` a 3 fournisseurs (nodejs20/22/24-npm, ambigu). Confirmer que
    ca s'installe proprement sur F44, sinon epingler une version dans
