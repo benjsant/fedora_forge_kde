@@ -4,7 +4,7 @@ Document vivant : a lire en debut de session pour savoir ou en est le projet, ce
 qui est valide, ce qui reste. Le guide technique de reference reste [CLAUDE.md](../CLAUDE.md).
 Mettre a jour ce fichier quand une etape majeure change.
 
-Derniere mise a jour : 2026-07-03.
+Derniere mise a jour : 2026-07-04.
 
 ## En une phrase
 
@@ -110,37 +110,55 @@ Etat tests : 260 pytest verts, ruff clean.
 
 ## Prochaines actions (par priorite) - reprise session
 
-1. **Tester la route COPR en reel** : `dnf copr enable -y` via [routes/copr.py](../routes/copr.py)
-   n'a PAS ete execute. Le risque de hang est ecarte (stdin=DEVNULL : echec
-   immediat si prompt), mais il faut confirmer que `-y` suffit sur dnf5 pour que
-   l'activation reussisse. Tester `atim/lazygit` en conteneur/VM (snapshot d'abord).
-   Verifier au passage le rollback (`dnf copr disable` + remove paquets).
-2. **Smoke test interactif du frontend decoupe** : le rendu headless est valide,
-   mais un clic reel sur chaque section (wizards asynchrones surtout : boutons
-   figes pendant la tache, badges rafraichis a la fin) reste a faire en VM.
-3. **nodejs / npm** (WARN de l'audit conteneur) : `dnf install nodejs npm` resout via
+1. **nodejs / npm** (WARN de l'audit conteneur) : `dnf install nodejs npm` resout via
    Provides mais `npm` a 3 fournisseurs (nodejs20/22/24-npm, ambigu). Confirmer que
    ca s'installe proprement sur F44, sinon epingler une version dans
    [configs/profiles/dev.json](../configs/profiles/dev.json).
-4. **scrcpy** retire de [configs/profiles/system.json](../configs/profiles/system.json)
+2. **scrcpy** retire de [configs/profiles/system.json](../configs/profiles/system.json)
    (absent de Fedora/RPM Fusion) : re-sourcer via un COPR de confiance ou un Flatpak
    (mirroring Android). Decision utilisateur.
-5. **Lancer `tools/container-pkg-audit.sh` regulierement** (remplace la verif
+3. **Lancer `tools/container-pkg-audit.sh` regulierement** (remplace la verif
    manuelle des "paquets incertains") et idealement l'ajouter en **CI non-bloquant**
    (job avec un conteneur Fedora). Dernier run : 0 FAIL, WARN nodejs/npm.
-6. **`scx-scheds`** (wizard sched-ext) : confirmer le depot officiel F44 (venait du
+4. **`scx-scheds`** (wizard sched-ext) : confirmer le depot officiel F44 (venait du
    repo tiers `terra` sur la Nobara de dev). Sinon -> ajouter au catalogue COPR.
-7. Cosmetique : unifier le nommage `fedorakdeforge` (lockfile/backups) vs
+5. Cosmetique : unifier le nommage `fedorakdeforge` (lockfile/backups) vs
    `fedoraforgekde` (sudoers/launcher).
-8. Optionnel : wizard ROCm (calcul AMD pour l'IA, basse priorite). Kernel CachyOS :
+6. Optionnel : wizard ROCm (calcul AMD pour l'IA, basse priorite). Kernel CachyOS :
    desormais dans le catalogue COPR (opt-in, danger boot documente) ; preferer le
    toggle sched-ext.
 
+## Campagne VM 2026-07-04 : COPR reel + wizards async VALIDES
+
+Sur la VM Fedora 44 (dnf5 5.4.2.1, SELinux enforcing), branche `eb2936f` :
+
+- **COPR reel** : `POST /api/copr/enable` (atim/lazygit) -> `dnf copr enable -y`
+  passe sur dnf5 **sans hang ni prompt** (12 s au total), lazygit installe.
+  Le doute historique sur le `-y` dnf5 est leve.
+- **Rollback COPR** : `POST /api/state/rollback/all` retire lazygit PUIS
+  desactive le depot (ordre inverse respecte). Verifie par rpm -q + repolist.
+- **Wizard RPM Fusion async reel** : reponse immediate (`started: true`),
+  tache visible dans /api/status, depots free+nonfree actifs a la fin,
+  logs SSE relayes.
+- **Verrou anti-concurrence** : codecs/install et copr/enable pendant la tache
+  RPM Fusion -> 409 "Tache en cours" comme prevu.
+- **Fallback de port reel** : 5000 occupe par un processus tiers -> app sur
+  5001 ; check Host/Origin suit le port reel (421 Host etranger, 200 Origin
+  localhost:5001). Le lockfile bloque bien une 2e instance de l'app (voulu).
+- **Frontend** : les 7 modules JS servis et executes dans la VM (rendu Firefox
+  headless, sections et boutons presents).
+- Apres les tests : **snapshot `claude-avant-tests-copr` restaure** (VM propre,
+  RPM Fusion inactif, depot git a jour sur eb2936f).
+
 ## Etat VM / reprise
 
-VM de validation : `ssh cobaye@192.168.122.200` (Fedora 44 KDE, NOPASSWD sudo).
-Apres la campagne du 2026-06-29/30 elle est **fortement modifiee** (RPM Fusion,
-codecs, flatpaks, paquets) : **restaurer le snapshot clean** avant de reprendre.
+VM de validation : `ssh cobaye@192.168.122.200` (Fedora 44 KDE, NOPASSWD sudo,
+domaine libvirt `fedora_kde_custom-clone` sur l'hote). Restauree au snapshot
+propre `claude-avant-tests-copr` (2026-07-04) : RPM Fusion inactif, depot
+`~/fedora_forge_kde` a jour, cle SSH de l'hote installee. Si l'acces SSH saute
+(revert d'un vieux snapshot), reinjecter une cle via l'agent QEMU :
+`virsh set-user-password` (l'agent est confine SELinux, guest-exec ne peut pas
+ecrire dans /home) puis `ssh` avec SSH_ASKPASS pour poser la cle.
 Pour piloter l'app graphiquement par SSH (navigateur sur l'ecran VM), il faut
 injecter l'env de session depuis plasmashell (`/proc/<pid>/environ` :
 WAYLAND_DISPLAY/DISPLAY/DBUS_SESSION_BUS_ADDRESS/XDG_RUNTIME_DIR) - les tweaks
@@ -149,7 +167,8 @@ user-level (panneau, dolphin) et le lancement du navigateur en dependent.
 ## Historique des PR
 
 - PR #1 (mergee) : implementation complete + CI.
-- PR #2 : garde RPM Fusion (preflight) + audit paquets du harnais VM.
+- PR #2 (ouverte) : garde RPM Fusion, catalogue COPR, wizards asynchrones,
+  decoupage frontend. CI verte, campagne VM 2026-07-04 passee.
 
 ## Pieges connus / a ne pas refaire
 
