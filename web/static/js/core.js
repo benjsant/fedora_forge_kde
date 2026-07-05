@@ -111,11 +111,16 @@ function forge() {
         checks: {},
         packages: {},
         systemInfo: null,
+        updates: null,
 
         init() {
             this.updateStatus();
             this.loadSystemInfo();
+            this.loadUpdates();
             setInterval(() => this.updateStatus(), 5000);
+            // Re-verifie les MAJ disponibles quand une tache se termine (le
+            // serveur invalide son cache apres un dnf upgrade reussi).
+            window.addEventListener('updates:refresh', () => this.loadUpdates());
         },
 
         async updateStatus() {
@@ -133,6 +138,15 @@ function forge() {
                 const data = await api('/api/system/info');
                 if (data.success) this.systemInfo = data.info;
             } catch (e) { console.error('System info error:', e); }
+        },
+
+        async loadUpdates() {
+            // dnf check-update peut prendre du temps (metadata) : appel a part,
+            // la pastille apparait quand la reponse arrive.
+            try {
+                const data = await api('/api/system/updates');
+                this.updates = data.success ? data.updates : null;
+            } catch (e) { this.updates = null; }
         },
 
         // --- Computed : status-bar ---
@@ -155,6 +169,10 @@ function forge() {
                 { id: 'failed',   label: 'Services en erreur',
                   value: (failed === null || failed === undefined ? '?' : failed),
                   cls: (failed === 0 ? 'ok' : (failed > 0 ? 'error' : '')) },
+                ...(this.updates === null ? [] : [{
+                    id: 'updates', label: 'Mises a jour dispo',
+                    value: this.updates,
+                    cls: this.updates === 0 ? 'ok' : '' }]),
             ];
         },
 
@@ -305,6 +323,10 @@ function updateTaskStatus(task) {
             // desormais en tache de fond : leurs badges se rafraichissent ici,
             // a la fin de la tache.
             refreshWizards();
+            // Pastille "Mises a jour dispo" (Alpine) + bouton MAJ systeme.
+            window.dispatchEvent(new CustomEvent('updates:refresh'));
+            const upBtn = document.getElementById('btnSystemUpdate');
+            if (upBtn) { upBtn.disabled = false; upBtn.textContent = 'Mettre a jour le systeme'; }
             if (_themeInstallPending) {
                 _themeInstallPending = false;
                 setTimeout(() => loadThemeCatalog(), 500);

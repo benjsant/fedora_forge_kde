@@ -85,7 +85,16 @@ garde en enforcing** (Nobara, lui, desactive SELinux et passe sur AppArmor).
   sur le port libre suivant si occupe ; le check anti-DNS-rebinding suit le
   port reel ; le launcher choisit le port et ouvre le navigateur dessus.
 
-Etat tests : 260 pytest verts, ruff clean.
+- **Mise a jour systeme depuis l'UI** (2026-07-04) : bouton "Mettre a jour le
+  systeme" (section Outils systeme, `POST /api/system/update`, dnf upgrade
+  --refresh en tache de fond via SSE) + pastille "Mises a jour dispo" dans la
+  barre de statut (`GET /api/system/updates`, dnf check-update, cache 15 min
+  invalide apres upgrade). Avant, la MAJ systeme n'existait que dans le flux
+  "Installation complete".
+- **CI etendue a Python 3.14** (python systeme de Fedora 43-44 ; l'app a tourne
+  sur 3.14.6 en VM le 2026-07-04).
+
+Etat tests : 270 pytest verts, ruff clean.
 
 ## Ce qui est VALIDE vs PAS ENCORE
 

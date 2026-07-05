@@ -180,7 +180,11 @@
         <div class="profiles-section" id="systemToolsSection">
             <div class="profiles-header">
                 <h2>Outils systeme</h2>
-                <button class="btn-small" onclick="loadSystemTools()">Rafraichir</button>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <button class="btn-small" id="btnSystemUpdate" onclick="systemUpdate()"
+                            style="border-color: var(--primary); color: var(--primary);">Mettre a jour le systeme</button>
+                    <button class="btn-small" onclick="loadSystemTools()">Rafraichir</button>
+                </div>
             </div>
             <p style="font-size: 0.85em; color: var(--text-muted); margin-bottom: 12px;">
                 Outils GUI standard de Fedora KDE (Discover, Parametres systeme, moniteur). Pour les pilotes, codecs et depots, utilisez les wizards Fedora ci-dessus.

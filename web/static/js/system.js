@@ -58,6 +58,31 @@ function launchSystemTool(toolId, btn) {
 }
 
 // =============================================
+// Mise a jour systeme (dnf upgrade)
+// =============================================
+function systemUpdate() {
+    if (isTaskRunning) { showToast('Une tache est deja en cours', 'warning'); return; }
+    showConfirm('Mettre a jour le systeme ?',
+        'dnf upgrade --refresh sera lance en arriere-plan (peut prendre plusieurs minutes selon les mises a jour). Suivez les logs.',
+        () => {
+            const btn = document.getElementById('btnSystemUpdate');
+            if (btn) { btn.disabled = true; btn.textContent = 'Mise a jour...'; }
+            api('/api/system/update', { method: 'POST' })
+                .then(data => {
+                    if (data.success) showToast(data.message || 'Mise a jour lancee', 'info');
+                    else {
+                        showToast(data.error || 'Erreur', 'error');
+                        if (btn) { btn.disabled = false; btn.textContent = 'Mettre a jour le systeme'; }
+                    }
+                })
+                .catch(() => {
+                    showToast('Erreur reseau', 'error');
+                    if (btn) { btn.disabled = false; btn.textContent = 'Mettre a jour le systeme'; }
+                });
+        });
+}
+
+// =============================================
 // Assistant SELinux
 // =============================================
 function _renderSelinux(data) {
