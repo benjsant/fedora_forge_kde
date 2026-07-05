@@ -3,6 +3,8 @@
 Outil d'automatisation post-installation pour **Fedora KDE Plasma Spin** (Fedora Workstation Edition KDE).
 Hard fork du projet [nobara-kde-forge](https://github.com/benjsant/nobara-kde-forge) adapte a Fedora vanilla, qui a moins de pre-configuration que Nobara out-of-the-box (pas de kernel patche, pas de codecs proprietaires, RPM Fusion a activer, NVIDIA a configurer, etc.).
 
+> **Nouvelle session ?** Lire d'abord [docs/STATUS.md](docs/STATUS.md) (etat du projet : fait / valide / a faire) puis revenir ici pour les details techniques. Le workflow de test VM est dans [tools/CLAUDE.md](tools/CLAUDE.md).
+
 ## Lancement
 
 ```bash
@@ -20,17 +22,21 @@ Hard fork du projet [nobara-kde-forge](https://github.com/benjsant/nobara-kde-fo
 .venv/bin/python fedora_kde_forge.py --list-profiles
 .venv/bin/python fedora_kde_forge.py --profile gaming,dev
 .venv/bin/python fedora_kde_forge.py --profile gaming --dry-run
+.venv/bin/python fedora_kde_forge.py --all            # Tout installer d'un coup (config complete)
+.venv/bin/python fedora_kde_forge.py --all --yes      # Sans confirmation interactive
+./fedoraforgeKDE.sh --all                             # Idem via le launcher (gere venv + sudo)
 
 # Tests (dev) : dans le venv
 .venv/bin/pip install pytest
 .venv/bin/pytest tests/
 ```
 
-Interface web Flask sur `http://localhost:5000`.
+Interface web Flask sur `http://localhost:5000` (port par defaut ; si occupe, bascule automatique sur le port libre suivant, l'URL reelle est affichee au lancement).
 
 ### Variables d'environnement
 
 - `FEDORAFORGEKDE_SCRIPT_TIMEOUT` : timeout (secondes) des scripts d'installation lances via `/api/execute/*`. Defaut : 7200 (2h).
+- `FEDORAFORGEKDE_PORT` : port d'ecoute souhaite (defaut 5000). Si occupe, l'app glisse sur le premier port libre suivant (10 essais) et le check anti-DNS-rebinding suit le port reellement ecoute.
 
 ### Differences cles vs nobara-kde-forge
 
@@ -124,7 +130,7 @@ fedora_kde_forge/
 │   ├── state_routes.py      # /api/state/* (rollback)
 │   ├── fedora_wizards.py    # /api/fedora/* : RPM Fusion, codecs, NVIDIA, Flathub (faits)
 │   ├── selinux.py           # /api/selinux/* : assistant SELinux (status, diagnostic AVC, toggle booleans)
-│   └── tweaks.py            # /api/tweaks/* (reset plasma, services systemd, audio PipeWire/BT, sysctls gaming, scheduler sched-ext)
+│   └── tweaks.py            # /api/tweaks/* (reset plasma, services systemd, audio PipeWire/BT, sysctls gaming, scheduler sched-ext, barre des taches fixe/flottante, zram zstd, menu admin Dolphin, Dolphin home au demarrage)
 │
 ├── scripts/                 # Logique d'installation (appeles par les routes)
 │   ├── __init__.py
@@ -144,6 +150,7 @@ fedora_kde_forge/
 │   ├── security.py          # Anti-CSRF / anti-DNS-rebinding middleware Flask
 │   ├── sandbox.py           # bwrap wrapper + detection patterns dangereux
 │   ├── lockfile.py          # Lock file global (PID file + signal handlers)
+│   ├── paths.py             # PROJECT_ROOT : ancre tous les chemins configs/logs (plus de chemins relatifs au CWD)
 │   ├── power.py             # Detection batterie (sysfs) -> warning UI
 │   ├── kde_backup.py        # Backup/restore config KDE. MAX_BACKUPS=30.
 │   ├── plasma_tweaks.py     # Reset plasmashell + clear caches
@@ -151,12 +158,17 @@ fedora_kde_forge/
 │   ├── audio_tweaks.py      # PipeWire sample rate + codecs BT premium (drop-in user-level, atomic write)
 │   ├── sysctl_tweaks.py     # Sysctls gaming (drop-in /etc/sysctl.d/, sudo via tee/rm + sysctl --system)
 │   ├── sched_ext.py         # Scheduler sched-ext gaming (scx_lavd) sur kernel Fedora standard, unit systemd geree
+│   ├── admin_menu.py        # Menu Dolphin "Ouvrir en tant qu'administrateur" (installe/retire kio-admin, comme Nobara)
+│   ├── zram_tweaks.py       # zram facon Nobara : compression zstd (zram-generator.conf) + vm.swappiness=100 (drop-in sysctl)
+│   ├── panel_tweaks.py      # Barre des taches Plasma flottante/fixe (kwriteconfig6 floating, reload plasmashell, user-level)
+│   ├── dolphin_tweaks.py    # Dolphin : dossier personnel au demarrage (RememberOpenedTabs=false, kwriteconfig6, user-level)
 │   ├── selinux_manager.py   # Assistant SELinux : mode, booleans whitelistes (setsebool -P), denials AVC. Jamais setenforce 0
 │   └── system_info.py       # Detection identite Fedora (kernel vanilla, LSM, SELinux, btrfs, zram, cache 30s)
 │
 ├── schemas/                 # Modeles Pydantic (extra='forbid')
 │   ├── __init__.py
 │   ├── packages.py, flatpak.py, external.py, themes.py, profile.py
+│   ├── copr.py              # Catalogue COPR experimental (depots tiers) + avertissement obligatoire
 │
 ├── configs/                 # Fichiers JSON de configuration
 │   ├── install.json         # Paquets RPM a installer
@@ -166,6 +178,7 @@ fedora_kde_forge/
 │   ├── optional_install.json
 │   ├── themes_gtk.json, themes_icons.json, themes_cursors.json, themes_kvantum.json
 │   ├── theme_config_recommended.json
+│   ├── copr.json            # Depots COPR experimentaux (lazygit, kernel CachyOS) + disclaimer "a vos risques"
 │   └── profiles/            # 16 profils adaptes Fedora
 │       ├── base.json, gaming.json, dev.json, multimedia.json, office.json
 │       ├── docker.json, distrobox.json, browsers.json, privacy.json
@@ -176,7 +189,14 @@ fedora_kde_forge/
 │   ├── templates/index.html
 │   └── static/
 │       ├── css/style.css    # Palette bleu Fedora (#3c6eb4 primary) au lieu du violet Nobara
-│       └── js/app.js
+│       └── js/              # Modules charges dans l'ordre (core.js d'abord), fonctions globales
+│           ├── core.js      # Helper api(), toasts, confirm, barre de tache, logs SSE, Alpine forge(), bootstrap
+│           ├── profiles.js  # Grille profils, modal detail, preflight/dry-run, export/import
+│           ├── wizards.js   # RPM Fusion, codecs, NVIDIA, Flathub, COPR (taches de fond + refreshWizards)
+│           ├── tweaks.js    # Services, audio, sysctls, sched-ext, panneau, zram, admin menu, Dolphin
+│           ├── themes.js    # Catalogue de themes (onglets, install git)
+│           ├── kde.js       # Parametres KDE, mode sombre, backups config, ecran de connexion
+│           └── system.js    # Outils systeme, SELinux, pare-feu, paquets optionnels, historique/rollback
 │
 └── tests/                   # Tests pytest
     ├── test_schemas.py            # Validation Pydantic round-trip
@@ -190,9 +210,14 @@ fedora_kde_forge/
     ├── test_audio_tweaks.py       # Drop-in PipeWire/WirePlumber
     ├── test_sysctl_tweaks.py      # Drop-in sysctls gaming + route toggle
     ├── test_sched_ext.py          # Scheduler sched-ext : whitelist, unit, parsing sysfs, routes
+    ├── test_admin_menu.py         # Menu admin Dolphin (kio-admin) : status/enable/disable + routes
+    ├── test_zram_tweaks.py        # zram zstd + swappiness : parsing algo, apply/remove, routes
+    ├── test_panel_tweaks.py       # Barre des taches : parsing containments panneau, set_floating, routes
+    ├── test_dolphin_tweaks.py     # Dolphin home au demarrage : status, set_home_on_startup, routes
     ├── test_selinux.py            # Assistant SELinux : booleans whitelist + parsing + routes
     ├── test_system_info.py        # Parsing OS/kernel/btrfs/zram
-    └── test_fedora_wizards.py     # RPM Fusion, codecs, NVIDIA, Flathub (faits)
+    ├── test_fedora_wizards.py     # RPM Fusion, codecs, NVIDIA, Flathub (faits)
+    └── test_copr.py               # Catalogue COPR : schema, disclaimer obligatoire, validation globale
 ```
 
 ## Specificites Fedora a implementer (Phase 2)

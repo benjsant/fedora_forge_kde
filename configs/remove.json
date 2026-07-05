@@ -1,7 +1,21 @@
 {
   "packages": [
-    { "name": "kmahjongg", "description": "Mahjongg game" },
-    { "name": "kmines", "description": "Minesweeper game" },
-    { "name": "kpat", "description": "Patience card game" }
+    { "name": "kmahjongg", "description": "Jeu de Mahjongg (KDE)" },
+    { "name": "kmines", "description": "Demineur (KDE)" },
+    { "name": "kpat", "description": "Jeu de reussites/patience (KDE)" },
+
+    { "name": "kontact", "description": "Suite PIM integree (mail/agenda/contacts) - rarement utilisee sur Fedora KDE" },
+    { "name": "kmail", "description": "Client de messagerie KDE (entraine akonadi, messagelib, etc.)" },
+    { "name": "korganizer", "description": "Agenda et gestionnaire de taches KDE PIM" },
+    { "name": "kaddressbook", "description": "Carnet d'adresses KDE PIM" },
+    { "name": "akregator", "description": "Lecteur de flux RSS KDE PIM" },
+    { "name": "ktnef", "description": "Visionneuse de pieces jointes TNEF (winmail.dat Outlook)" },
+    { "name": "kmouth", "description": "Synthese vocale / aide a la parole (accessibilite)" },
+
+    { "name": "elisa-player", "description": "Lecteur de musique Elisa" },
+    { "name": "dragon", "description": "Lecteur video Dragon Player (basique)" },
+    { "name": "kamoso", "description": "Capture webcam / photo" },
+    { "name": "kolourpaint", "description": "Editeur d'images simple (type Paint)" },
+    { "name": "neochat", "description": "Client de messagerie Matrix" }
   ]
 }

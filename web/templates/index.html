@@ -180,7 +180,11 @@
         <div class="profiles-section" id="systemToolsSection">
             <div class="profiles-header">
                 <h2>Outils systeme</h2>
-                <button class="btn-small" onclick="loadSystemTools()">Rafraichir</button>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <button class="btn-small" id="btnSystemUpdate" onclick="systemUpdate()"
+                            style="border-color: var(--primary); color: var(--primary);">Mettre a jour le systeme</button>
+                    <button class="btn-small" onclick="loadSystemTools()">Rafraichir</button>
+                </div>
             </div>
             <p style="font-size: 0.85em; color: var(--text-muted); margin-bottom: 12px;">
                 Outils GUI standard de Fedora KDE (Discover, Parametres systeme, moniteur). Pour les pilotes, codecs et depots, utilisez les wizards Fedora ci-dessus.
@@ -351,6 +355,68 @@
                     <div style="color: var(--text-muted);">Chargement...</div>
                 </div>
             </div>
+
+            <!-- Barre des taches : flottante / fixe -->
+            <div style="margin-top: 22px;">
+                <h3 style="color: var(--primary); margin-bottom: 6px; font-size: 1em;">Barre des taches (panneau)</h3>
+                <p style="font-size: 0.85em; color: var(--text-muted); margin-bottom: 10px;">
+                    Bascule le panneau Plasma entre <strong>flottant</strong> (defaut Fedora) et <strong>fixe</strong> (colle au bord). Relance plasmashell pour appliquer.
+                </p>
+                <div id="panelControls">
+                    <div style="color: var(--text-muted);">Chargement...</div>
+                </div>
+            </div>
+
+            <!-- Memoire : zram facon Nobara -->
+            <div style="margin-top: 22px;">
+                <h3 style="color: var(--primary); margin-bottom: 6px; font-size: 1em;">Memoire (zram facon Nobara)</h3>
+                <p style="font-size: 0.85em; color: var(--text-muted); margin-bottom: 10px;">
+                    Bascule le swap zram en compression <strong>zstd</strong> (swap effectif plus grand qu'en lzo-rle) et passe <code>vm.swappiness</code> a 100, comme Nobara. Fedora a deja le zram, ce tweak ne fait qu'aligner l'algo et la swappiness. Reversible.
+                </p>
+                <div id="zramControls">
+                    <div style="color: var(--text-muted);">Chargement...</div>
+                </div>
+            </div>
+
+            <!-- Menu Dolphin : Ouvrir en tant qu'administrateur -->
+            <div style="margin-top: 22px;">
+                <h3 style="color: var(--primary); margin-bottom: 6px; font-size: 1em;">Menu "Ouvrir en tant qu'administrateur" (Dolphin)</h3>
+                <p style="font-size: 0.85em; color: var(--text-muted); margin-bottom: 10px;">
+                    Ajoute les entrees "Ouvrir/Editer en tant qu'administrateur" au clic droit de Dolphin, comme sur Nobara (paquet KDE officiel kio-admin, authentification polkit). Redemarrez Dolphin apres activation.
+                </p>
+                <div id="adminMenuControls">
+                    <div style="color: var(--text-muted);">Chargement...</div>
+                </div>
+            </div>
+
+            <!-- Dolphin : dossier personnel au demarrage -->
+            <div style="margin-top: 22px;">
+                <h3 style="color: var(--primary); margin-bottom: 6px; font-size: 1em;">Dolphin : dossier personnel au demarrage</h3>
+                <p style="font-size: 0.85em; color: var(--text-muted); margin-bottom: 10px;">
+                    Force Dolphin a ouvrir le dossier personnel au lancement (au lieu de rouvrir les onglets de la derniere session). Effet au prochain lancement de Dolphin.
+                </p>
+                <div id="dolphinControls">
+                    <div style="color: var(--text-muted);">Chargement...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- COPR experimental (depots tiers) -->
+        <div class="profiles-section" id="coprSection">
+            <div class="profiles-header">
+                <h2>Depots COPR (experimental)</h2>
+                <button class="btn-small" onclick="loadCopr()">Rafraichir</button>
+            </div>
+            <div id="coprWarning" style="font-size: 0.85em; background: #fde8e8; border-left: 4px solid var(--danger); border-radius: 6px; padding: 10px 14px; margin-bottom: 14px; color: #8a1f1f;">
+                Chargement...
+            </div>
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.88em; margin-bottom: 14px; cursor: pointer;">
+                <input type="checkbox" id="coprAck" onchange="renderCoprButtons()">
+                <span>J'ai compris : ces depots tiers ne sont pas maintenus par Fedora, je les active a mes risques et perils.</span>
+            </label>
+            <div id="coprList">
+                <div style="color: var(--text-muted);">Chargement...</div>
+            </div>
         </div>
 
         <!-- Ecran de connexion (Plasma Login Manager) -->
@@ -468,6 +534,14 @@
         </div>
     </div>
 
-    <script src="/static/js/app.js"></script>
+    <!-- core.js en premier (helpers api/toast/confirm + bootstrap) ; les autres
+         modules declarent des fonctions globales appelees par les handlers inline. -->
+    <script src="/static/js/core.js"></script>
+    <script src="/static/js/profiles.js"></script>
+    <script src="/static/js/wizards.js"></script>
+    <script src="/static/js/tweaks.js"></script>
+    <script src="/static/js/themes.js"></script>
+    <script src="/static/js/kde.js"></script>
+    <script src="/static/js/system.js"></script>
 </body>
 </html>

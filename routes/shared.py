@@ -6,8 +6,10 @@ import queue
 import subprocess
 import sys
 import threading
+import traceback
 from logging.handlers import RotatingFileHandler
-from pathlib import Path
+
+from utils.paths import PROJECT_ROOT
 
 log_queue = queue.Queue(maxsize=1000)
 current_task = {"running": False, "name": "", "progress": 0}
@@ -16,7 +18,7 @@ task_lock = threading.Lock()
 _current_process = None
 _process_lock = threading.Lock()
 
-LOG_DIR = Path("logs")
+LOG_DIR = PROJECT_ROOT / "logs"
 LOG_DIR.mkdir(exist_ok=True)
 
 # Timeout des scripts d'installation, en secondes.
@@ -52,11 +54,30 @@ logging.basicConfig(
 )
 logger = logging.getLogger("fedoraforgekde")
 
+# Logger fichier seul (propagate=False) : pour ecrire les tracebacks multi-lignes
+# SANS les envoyer en SSE, ou les '\n' casseraient le framing 'data:' du flux.
+_file_logger = logging.getLogger("fedoraforgekde.file")
+_file_logger.propagate = False
+_file_logger.setLevel(logging.INFO)
+_file_logger.addHandler(_file_handler)
+
 
 def log_info(msg):    logger.info(msg)
 def log_success(msg): logger.info(f"[OK] {msg}")
 def log_warn(msg):    logger.warning(f"[WARN] {msg}")
 def log_error(msg):   logger.error(f"[ERROR] {msg}")
+
+
+def log_exc(msg):
+    """Comme log_error mais ajoute la traceback complete dans le fichier de log.
+
+    Le message court part en SSE + fichier ; la traceback ne va que dans le
+    fichier (logs/fedoraforgekde.log), pour le diagnostic, sans polluer l'UI ni
+    casser le flux SSE. A utiliser dans les `except` qui sinon avaleraient l'erreur."""
+    log_error(msg)
+    tb = traceback.format_exc()
+    if tb and tb.strip() and tb.strip() != "NoneType: None":
+        _file_logger.error("Traceback:\n%s", tb.rstrip())
 
 
 def notify_desktop(title, message=""):
@@ -94,10 +115,35 @@ def cancel_current_task():
         return False
 
 
+def start_background_task(name, worker):
+    """Reserve le slot de tache global et execute `worker` dans un thread.
+
+    Retourne False (sans rien lancer) si une tache est deja en cours : le
+    caller repond alors 409, comme /api/execute/*. Le slot est libere quand
+    le worker se termine (succes, echec ou exception). `worker` retourne un
+    booleen de succes, utilise pour le libelle final de la barre de tache."""
+    with task_lock:
+        if current_task["running"]:
+            return False
+        current_task.update(running=True, name=name, progress=0)
+
+    def _run():
+        ok = False
+        try:
+            ok = bool(worker())
+        except Exception as e:
+            log_exc(f"Erreur {name} : {e}")
+        finally:
+            update_task_status(name if ok else f"{name} : echec", False, 100)
+
+    threading.Thread(target=_run, daemon=True).start()
+    return True
+
+
 def run_script(script_name):
-    script_path = Path("scripts") / f"{script_name}.py"
+    script_path = PROJECT_ROOT / "scripts" / f"{script_name}.py"
     if not script_path.exists():
-        script_path = Path("scripts") / script_name
+        script_path = PROJECT_ROOT / "scripts" / script_name
         if not script_path.exists():
             log_error(f"Script introuvable : {script_name}")
             return False
@@ -114,9 +160,8 @@ def run_script(script_name):
 
         # Ajoute la racine du projet au PYTHONPATH (double securite : pour les
         # scripts bash et au cas ou `-m` serait court-circuite).
-        project_root = Path(__file__).resolve().parent.parent
         existing_pp = os.environ.get("PYTHONPATH", "")
-        new_pp = str(project_root) + (os.pathsep + existing_pp if existing_pp else "")
+        new_pp = str(PROJECT_ROOT) + (os.pathsep + existing_pp if existing_pp else "")
         env = {**os.environ, "PYTHONUNBUFFERED": "1", "PYTHONPATH": new_pp}
         process = subprocess.Popen(
             cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,

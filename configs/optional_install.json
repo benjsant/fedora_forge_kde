@@ -3,8 +3,7 @@
     { "name": "hplip", "description": "HP Linux Imaging and Printing" },
     { "name": "sane-backends", "description": "Scanner backends" },
     { "name": "cabextract", "description": "Cabinet file extractor" },
-    { "name": "p7zip", "description": "7-Zip file archiver" },
-    { "name": "p7zip-plugins", "description": "7-Zip plugins" },
+    { "name": "7zip", "description": "7-Zip file archiver (full codecs ; remplace p7zip)" },
     { "name": "unrar", "description": "RAR file extractor" }
   ]
 }

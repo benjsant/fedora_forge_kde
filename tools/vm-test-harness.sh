@@ -45,6 +45,9 @@ while [ $# -gt 0 ]; do
     esac
 done
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(dirname "$SCRIPT_DIR")"
+
 # Execute une commande sur la VM. Renvoie code + stdout/stderr fusionnes.
 rexec() {
     ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new \
@@ -199,6 +202,62 @@ if grep -qi absent <<<"$fh"; then
     note_warn "Flathub absent (le wizard l'ajouterait)"
 else
     echo -e "  ${GREEN}PASS${RESET} Flathub present  ->  $fh"; PASS=$((PASS+1))
+fi
+
+# =============================================================
+section "Menu admin Dolphin (kio-admin)"
+# =============================================================
+# Le menu clic droit "Ouvrir en tant qu'administrateur" vient du paquet KDE
+# officiel kio-admin (depots Fedora, pas de RPM Fusion requis).
+check "kio-admin disponible (repoquery)" \
+    'dnf repoquery --available kio-admin 2>/dev/null | grep -q kio-admin && echo ok' "ok"
+ka="$(rexec 'rpm -q kio-admin >/dev/null 2>&1 && echo installed || echo absent')"
+if [ "$ka" = "installed" ]; then
+    echo -e "  ${GREEN}PASS${RESET} kio-admin deja installe"; PASS=$((PASS+1))
+else
+    note_skip "kio-admin non installe (le tweak l'installerait)"
+fi
+
+# =============================================================
+section "Audit paquets des profils (disponibilite reelle)"
+# =============================================================
+# Verite terrain : pour chaque paquet 'apt' des profils, on demande a la VM s'il
+# est resolu par dnf (repos actuellement actifs). Les manquants sont des paquets
+# Nobara-only / RPM Fusion / COPR a sourcer autrement sur Fedora.
+# NB : depend des repos actifs sur la VM. Lancez-le avant ET apres --mutate
+# (RPM Fusion) pour distinguer "necessite RPM Fusion" de "introuvable partout".
+if ! command -v python3 >/dev/null 2>&1; then
+    note_skip "Audit paquets : python3 requis sur l'hote"
+elif [ ! -d "$REPO_ROOT/configs/profiles" ]; then
+    note_skip "Audit paquets : configs/profiles introuvable ($REPO_ROOT)"
+else
+    # Liste des noms (suffixe d'arch retire) extraite des profils, cote hote.
+    WANT="$(python3 - "$REPO_ROOT" <<'PY'
+import glob, json, re, sys
+root = sys.argv[1]
+names = set()
+for f in glob.glob(f"{root}/configs/profiles/*.json"):
+    for p in json.load(open(f)).get("apt", []):
+        names.add(re.sub(r"\.(i686|x86_64|noarch|aarch64)$", "", p["name"]))
+print(" ".join(sorted(names)))
+PY
+)"
+    total_pkgs=$(wc -w <<<"$WANT")
+    # Paquets resolus par dnf sur la VM (noms uniques).
+    AVAIL="$(rexec "dnf repoquery --qf '%{name}\n' --available $WANT 2>/dev/null | sort -u")"
+    MISSING="$(comm -23 <(tr ' ' '\n' <<<"$WANT" | sort -u) <(printf '%s\n' "$AVAIL"))"
+    MISSING="$(grep -v '^$' <<<"$MISSING" || true)"
+    rf_on="$(rpmfusion_on)"
+    if [ -z "$MISSING" ]; then
+        echo -e "  ${GREEN}PASS${RESET} $total_pkgs paquets profils tous resolus (RPM Fusion: $rf_on)"
+        PASS=$((PASS+1))
+    else
+        nmiss=$(grep -c . <<<"$MISSING")
+        echo -e "  ${YELLOW}WARN${RESET} $nmiss/$total_pkgs paquet(s) introuvable(s) (RPM Fusion: $rf_on) :"
+        while read -r m; do [ -n "$m" ] && echo "       - $m"; done <<<"$MISSING"
+        [ "$rf_on" = "off" ] && echo "       (active RPM Fusion via --mutate puis relance pour reduire cette liste)"
+        WARN=$((WARN+1))
+    fi
 fi
 
 # =============================================================

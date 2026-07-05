@@ -15,10 +15,12 @@ ACTION_DNF_INSTALL = "dnf_install"
 ACTION_DNF_REMOVE = "dnf_remove"
 ACTION_FLATPAK_INSTALL = "flatpak_install"
 ACTION_EXTERNAL_INSTALL = "external_install"
+ACTION_COPR_ENABLE = "copr_enable"
 
 VALID_ACTIONS = {
     ACTION_DNF_INSTALL, ACTION_DNF_REMOVE,
     ACTION_FLATPAK_INSTALL, ACTION_EXTERNAL_INSTALL,
+    ACTION_COPR_ENABLE,
 }
 
 DEFAULT_STATE_FILE = Path(__file__).parent.parent / "data" / "state.json"

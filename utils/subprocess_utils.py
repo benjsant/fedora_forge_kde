@@ -37,10 +37,10 @@ def run_command(cmd, check=False, capture_output=False, cwd=None, timeout=None, 
         return CommandResult(-1, "", f"Commande introuvable : {e}")
 
 
-def run_sudo_command(cmd, check=False, capture_output=False, timeout=None):
+def run_sudo_command(cmd, check=False, capture_output=False, timeout=None, cwd=None):
     """Execute avec sudo -n (echoue si mot de passe requis)."""
     return run_command(["sudo", "-n"] + cmd, check=check,
-                       capture_output=capture_output, timeout=timeout)
+                       capture_output=capture_output, timeout=timeout, cwd=cwd)
 
 
 def check_package_installed(package_name):
@@ -101,7 +101,10 @@ def system_update(assume_yes=True):
 
 
 def flatpak_install(app_id, remote="flathub", assume_yes=True):
-    cmd = ["flatpak", "install"]
+    """Installe un Flatpak au niveau systeme (le wizard Flathub ajoute un remote
+    systeme). L'install systeme exige les privileges : on passe par `sudo -n`,
+    sinon flatpak refuse ('Deploy not allowed for user') en pilotage non interactif."""
+    cmd = ["sudo", "-n", "flatpak", "install"]
     if assume_yes:
         cmd.append("-y")
     cmd.extend([remote, app_id])

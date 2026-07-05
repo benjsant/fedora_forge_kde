@@ -8,7 +8,6 @@ import socket
 import subprocess
 import threading
 import time
-from pathlib import Path
 
 from flask import Blueprint, Response, jsonify
 
@@ -16,6 +15,7 @@ from routes.shared import (
     cancel_current_task,
     current_task,
     log_error,
+    log_exc,
     log_info,
     log_queue,
     log_success,
@@ -25,6 +25,7 @@ from routes.shared import (
     update_task_status,
 )
 from utils import system_update, timeshift_available
+from utils.paths import PROJECT_ROOT
 from utils.power import get_power_state
 from utils.system_info import gather as gather_system_info
 from utils.theme_manager import ThemeManager
@@ -34,10 +35,28 @@ bp = Blueprint("legacy", __name__)
 _status_cache = {"data": None, "ts": 0}
 STATUS_CACHE_TTL = 8
 
+# Services qui echouent typiquement en VM/virtualisation sans que ce soit un vrai
+# probleme (pas de materiel MCE expose au noyau invite). On les exclut du compteur
+# pour eviter une fausse alerte rouge lors des tests en VM.
+_IGNORED_FAILED_UNITS = {"mcelog.service"}
+
+
+def _count_failed_services(stdout):
+    """Compte les services en echec, hors artefacts de VM connus."""
+    count = 0
+    for line in stdout.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        if line.split()[0] in _IGNORED_FAILED_UNITS:
+            continue
+        count += 1
+    return count
+
 
 def _tool_available(name):
     try:
-        return subprocess.run(["which", name], capture_output=True).returncode == 0
+        return subprocess.run(["which", name], capture_output=True, timeout=3).returncode == 0
     except Exception:
         return False
 
@@ -68,7 +87,7 @@ def _check_system():
             ["systemctl", "--failed", "--no-legend", "--no-pager", "--plain"],
             capture_output=True, text=True, timeout=3,
         )
-        checks["failed_services"] = sum(1 for line in r.stdout.splitlines() if line.strip())
+        checks["failed_services"] = _count_failed_services(r.stdout)
     except Exception:
         checks["failed_services"] = None
     return checks
@@ -76,18 +95,18 @@ def _check_system():
 
 def _get_package_counts():
     files = {
-        "dnf": "configs/install.json",
-        "optional": "configs/optional_install.json",
-        "flatpak": "configs/flatpak.json",
-        "external": "configs/external_packages.json",
-        "themes_gtk": "configs/themes_gtk.json",
-        "themes_icons": "configs/themes_icons.json",
-        "themes_cursors": "configs/themes_cursors.json",
+        "dnf": "install.json",
+        "optional": "optional_install.json",
+        "flatpak": "flatpak.json",
+        "external": "external_packages.json",
+        "themes_gtk": "themes_gtk.json",
+        "themes_icons": "themes_icons.json",
+        "themes_cursors": "themes_cursors.json",
     }
     counts = {}
     for key, path in files.items():
         try:
-            with open(path) as f:
+            with open(PROJECT_ROOT / "configs" / path) as f:
                 data = json.load(f)
             for list_key in ("packages", "flatpaks", "themes"):
                 if list_key in data:
@@ -137,7 +156,7 @@ def cancel_task():
 @bp.route('/api/logs/history')
 def logs_history():
     try:
-        log_file = Path("logs/fedoraforgekde.log")
+        log_file = PROJECT_ROOT / "logs" / "fedoraforgekde.log"
         if not log_file.exists():
             return jsonify({"lines": []})
         lines = log_file.read_text(errors="replace").splitlines()
@@ -206,6 +225,8 @@ def execute_all():
         current_task.update(running=True, name="Installation complete", progress=0)
 
     def run_all():
+        # Pas de themes ici : on garde le theme par defaut (Breeze). L'installation
+        # de themes reste opt-in via la section Themes de l'UI.
         tasks = [
             ("Mise a jour systeme", "system_update"),
             ("Paquets DNF", "dnf_install"),
@@ -213,7 +234,6 @@ def execute_all():
             ("Paquets externes", "external_install"),
             ("Nettoyage", "dnf_remove"),
             ("Flatpaks", "flatpak_install"),
-            ("Themes", "themes_install"),
         ]
         critical = {"system_update", "dnf_install"}
         total = len(tasks)
@@ -236,7 +256,7 @@ def execute_all():
                             break
                 time.sleep(0.5)
         except Exception as e:
-            log_error(f"Erreur inattendue : {e}")
+            log_exc(f"Erreur inattendue : {e}")
             failed.append("erreur inattendue")
         finally:
             if failed:
@@ -267,7 +287,7 @@ def quit_app():
 def optional_list():
     """Liste les paquets optionnels avec leur statut d'installation."""
     try:
-        config_file = Path("configs/optional_install.json")
+        config_file = PROJECT_ROOT / "configs" / "optional_install.json"
         if not config_file.exists():
             return jsonify({"packages": []})
         with open(config_file, encoding="utf-8") as f:
@@ -284,7 +304,7 @@ def optional_list():
 @bp.route('/api/theme/status')
 def theme_status():
     try:
-        config_file = Path("configs/theme_config_recommended.json")
+        config_file = PROJECT_ROOT / "configs" / "theme_config_recommended.json"
         if not config_file.exists():
             return jsonify({"success": False, "error": "Fichier config introuvable"}), 404
         result = ThemeManager().check_recommended_config(config_file)
@@ -302,7 +322,7 @@ def apply_recommended_theme():
 
     def run():
         try:
-            config_file = Path("configs/theme_config_recommended.json")
+            config_file = PROJECT_ROOT / "configs" / "theme_config_recommended.json"
             if not config_file.exists():
                 log_error("Fichier config introuvable")
                 update_task_status("", False, 0)
@@ -331,7 +351,7 @@ def apply_recommended_theme():
                 log_error("Config terminee avec erreurs")
                 update_task_status("Erreurs detectees", False, 100)
         except Exception as e:
-            log_error(f"Erreur config themes : {e}")
+            log_exc(f"Erreur config themes : {e}")
             update_task_status("", False, 0)
 
     threading.Thread(target=run, daemon=True).start()

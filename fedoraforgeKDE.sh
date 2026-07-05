@@ -250,8 +250,11 @@ echo -e "${BLUE}================================================${RESET}"
 echo -e "${GREEN}  FedoraForgeKDE pret - Lancement...${RESET}"
 echo -e "${BLUE}================================================${RESET}"
 echo ""
-info "URL: http://localhost:5000"
+info "URL: http://localhost:${FEDORAFORGEKDE_PORT:-5000} (port suivant si deja occupe)"
 info "Arret: CTRL+C"
 echo ""
 
-"$VENV_PY" "$PYTHON_SCRIPT"
+# Les arguments du launcher sont transmis au script Python : sans argument -> UI
+# web ; avec --all / --profile ... -> mode CLI (le venv, le sudo et l'inhibition
+# de veille mis en place ci-dessus profitent aussi a l'installation en ligne de commande).
+"$VENV_PY" "$PYTHON_SCRIPT" "$@"

@@ -24,6 +24,23 @@ def client():
     return c
 
 
+@pytest.fixture
+def sync_tasks(monkeypatch):
+    """Execute les taches de fond en synchrone (pas de thread) et capture
+    le nom de la tache + le resultat du worker, pour tester le travail
+    normalement lance en arriere-plan par start_background_task."""
+    from routes import fedora_wizards as fw
+    captured = {}
+
+    def _sync(name, worker):
+        captured["name"] = name
+        captured["result"] = worker()
+        return True
+
+    monkeypatch.setattr(fw, "start_background_task", _sync)
+    return captured
+
+
 def test_routes_registered():
     from web_app import app
     rules = {r.rule for r in app.url_map.iter_rules()}
@@ -95,7 +112,7 @@ def test_enable_fails_without_fedora_version(client, monkeypatch):
     assert r.get_json()["success"] is False
 
 
-def test_enable_installs_only_missing_repos(client, monkeypatch):
+def test_enable_installs_only_missing_repos(client, monkeypatch, sync_tasks):
     from routes import fedora_wizards as fw
     # free deja la, nonfree manquant -> on ne doit installer que le nonfree.
     monkeypatch.setattr(fw, "_repo_enabled", lambda repo: repo == "rpmfusion-free")
@@ -112,12 +129,16 @@ def test_enable_installs_only_missing_repos(client, monkeypatch):
 
     r = client.post("/api/fedora/rpmfusion/enable")
     assert r.status_code == 200
+    assert r.get_json()["started"] is True
     joined = " ".join(captured["cmd"])
     assert "nonfree" in joined
     assert "rpmfusion-free-release-41" not in joined  # free non reinstalle
+    assert sync_tasks["result"] is True
 
 
-def test_enable_propagates_install_failure(client, monkeypatch):
+def test_enable_reports_install_failure(client, monkeypatch, sync_tasks):
+    """L'echec du dnf est reporte par le worker (logs + barre de tache) :
+    la route, elle, a deja repondu 'lance'."""
     from routes import fedora_wizards as fw
     monkeypatch.setattr(fw, "_repo_enabled", lambda repo: False)
     monkeypatch.setattr(fw, "_pkg_installed", lambda pkg: False)
@@ -126,7 +147,22 @@ def test_enable_propagates_install_failure(client, monkeypatch):
     monkeypatch.setattr(fw, "_stream_sudo", lambda cmd, timeout=None: 1)
 
     r = client.post("/api/fedora/rpmfusion/enable")
-    assert r.status_code == 500
+    assert r.status_code == 200
+    assert r.get_json()["started"] is True
+    assert sync_tasks["result"] is False
+
+
+def test_enable_busy_returns_409(client, monkeypatch):
+    """Si une tache est deja en cours, le wizard refuse (pas de DNF concurrent)."""
+    from routes import fedora_wizards as fw
+    monkeypatch.setattr(fw, "_repo_enabled", lambda repo: False)
+    monkeypatch.setattr(fw, "_pkg_installed", lambda pkg: False)
+    monkeypatch.setattr(fw, "_fedora_version", lambda: "41")
+    monkeypatch.setattr(fw, "_selinux_state", lambda: "enforcing")
+    monkeypatch.setattr(fw, "start_background_task", lambda name, worker: False)
+
+    r = client.post("/api/fedora/rpmfusion/enable")
+    assert r.status_code == 409
     assert r.get_json()["success"] is False
 
 
@@ -179,7 +215,7 @@ def test_codecs_install_noop_when_present(client, monkeypatch):
     assert data["already_installed"] is True
 
 
-def test_codecs_install_runs_all_steps(client, monkeypatch):
+def test_codecs_install_runs_all_steps(client, monkeypatch, sync_tasks):
     from routes import fedora_wizards as fw
     monkeypatch.setattr(fw, "_repo_enabled", lambda repo: True)
     # Temoins absents -> not installed, mais rpmfusion actif.
@@ -193,9 +229,10 @@ def test_codecs_install_runs_all_steps(client, monkeypatch):
     assert any("install" in c for c in calls)
     assert any("multimedia" in c for c in calls)
     assert any("sound-and-video" in c for c in calls)
+    assert sync_tasks["result"] is True
 
 
-def test_codecs_install_stops_on_failure(client, monkeypatch):
+def test_codecs_install_stops_on_failure(client, monkeypatch, sync_tasks):
     from routes import fedora_wizards as fw
     monkeypatch.setattr(fw, "_repo_enabled", lambda repo: True)
     monkeypatch.setattr(fw, "_pkg_installed", lambda pkg: False)
@@ -207,8 +244,28 @@ def test_codecs_install_stops_on_failure(client, monkeypatch):
     monkeypatch.setattr(fw, "_stream_sudo", _stream)
 
     r = client.post("/api/fedora/codecs/install")
-    assert r.status_code == 500
+    assert r.status_code == 200
     assert len(calls) == 1  # on s'arrete a la premiere erreur
+    assert sync_tasks["result"] is False
+
+
+def test_codecs_install_group_failure_non_fatal(client, monkeypatch, sync_tasks):
+    from routes import fedora_wizards as fw
+    monkeypatch.setattr(fw, "_repo_enabled", lambda repo: True)
+    monkeypatch.setattr(fw, "_pkg_installed", lambda pkg: False)
+    calls = []
+
+    def _stream(cmd, timeout=None):
+        calls.append(cmd)
+        # L'install ffmpeg reussit, mais les 'group upgrade' echouent.
+        return 0 if "install" in cmd else 1
+    monkeypatch.setattr(fw, "_stream_sudo", _stream)
+
+    r = client.post("/api/fedora/codecs/install")
+    # Les etapes de groupe sont en meilleur effort : succes malgre leur echec.
+    assert r.status_code == 200
+    assert sync_tasks["result"] is True
+    assert len(calls) == 3  # install + 2 group upgrade tentes
 
 
 # --- Wizard NVIDIA ---
@@ -244,7 +301,7 @@ def test_nvidia_install_blocked_without_rpmfusion(client, monkeypatch):
     assert r.get_json()["rpmfusion_required"] is True
 
 
-def test_nvidia_install_runs_when_ready(client, monkeypatch):
+def test_nvidia_install_runs_when_ready(client, monkeypatch, sync_tasks):
     from routes import fedora_wizards as fw
     monkeypatch.setattr(fw, "_nvidia_gpu_present", lambda: True)
     monkeypatch.setattr(fw, "_pkg_installed", lambda pkg: False)
@@ -257,6 +314,7 @@ def test_nvidia_install_runs_when_ready(client, monkeypatch):
     r = client.post("/api/fedora/nvidia/install")
     assert r.status_code == 200
     assert "akmod-nvidia" in captured["cmd"]
+    assert sync_tasks["result"] is True
 
 
 def test_nvidia_install_noop_when_present(client, monkeypatch):
@@ -305,7 +363,7 @@ def test_flathub_status_full(client, monkeypatch):
     assert data["enabled"] is True
 
 
-def test_flathub_enable_adds_when_absent(client, monkeypatch):
+def test_flathub_enable_adds_when_absent(client, monkeypatch, sync_tasks):
     from routes import fedora_wizards as fw
     monkeypatch.setattr(fw, "_flathub_status",
                         lambda: {"present": False, "filtered": False, "enabled": False})
@@ -316,16 +374,14 @@ def test_flathub_enable_adds_when_absent(client, monkeypatch):
     r = client.post("/api/fedora/flathub/enable")
     assert r.status_code == 200
     assert "remote-add" in captured["cmd"]
+    assert sync_tasks["result"] is True
 
 
-def test_flathub_enable_unfilters_when_present(client, monkeypatch):
+def test_flathub_enable_unfilters_when_present(client, monkeypatch, sync_tasks):
     from routes import fedora_wizards as fw
     # present mais filtre -> doit retirer le filtre via remote-modify.
-    states = iter([
-        {"present": True, "filtered": True, "enabled": False},   # avant
-        {"present": True, "filtered": False, "enabled": True},   # apres
-    ])
-    monkeypatch.setattr(fw, "_flathub_status", lambda: next(states))
+    monkeypatch.setattr(fw, "_flathub_status",
+                        lambda: {"present": True, "filtered": True, "enabled": False})
     captured = {}
     monkeypatch.setattr(fw, "_stream_sudo",
                         lambda cmd, timeout=None: captured.update(cmd=cmd) or 0)
@@ -334,6 +390,7 @@ def test_flathub_enable_unfilters_when_present(client, monkeypatch):
     assert r.status_code == 200
     assert "remote-modify" in captured["cmd"]
     assert "--no-filter" in captured["cmd"]
+    assert sync_tasks["result"] is True
 
 
 def test_flathub_enable_noop_when_full(client, monkeypatch):

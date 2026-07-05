@@ -4,9 +4,11 @@ import time
 
 from flask import Blueprint, jsonify, request
 
+from routes.fedora_wizards import _rpmfusion_status
 from routes.shared import (
     current_task,
     log_error,
+    log_exc,
     log_info,
     log_success,
     log_warn,
@@ -34,6 +36,13 @@ from utils.profile_loader import get_profile, load_all_profiles
 from utils.sandbox import looks_dangerous
 
 bp = Blueprint("profiles", __name__)
+
+# Paquets presents UNIQUEMENT dans RPM Fusion (absents de Fedora vanilla). Sur
+# Nobara ils viennent des depots curatos, mais sur Fedora ils echouent tant que
+# RPM Fusion n'est pas active. Le preflight previent l'utilisateur.
+_RPMFUSION_ONLY = {
+    "steam", "vlc", "HandBrake-gui",
+}
 
 PROFILE_ORDER = ["base", "office", "communication", "gaming", "htpc", "handheld", "dev", "multimedia", "docker", "distrobox", "amd", "nvidia", "privacy", "vpn", "browsers", "system"]
 
@@ -157,7 +166,7 @@ def install_profiles():
                 update_task_status("Profils installes", False, 100)
                 log_success(f"{total} profil(s) installe(s)")
         except Exception as e:
-            log_error(f"Erreur installation profils : {e}")
+            log_exc(f"Erreur installation profils : {e}")
             update_task_status("Installation echouee", False, 100)
 
     threading.Thread(target=run, daemon=True).start()
@@ -307,7 +316,7 @@ def install_custom():
                 update_task_status("Installation terminee", False, 100)
                 log_success("Installation personnalisee terminee.")
         except Exception as e:
-            log_error(f"Erreur installation personnalisee : {e}")
+            log_exc(f"Erreur installation personnalisee : {e}")
             update_task_status("Erreur", False, 0)
 
     threading.Thread(target=run, daemon=True).start()
@@ -368,6 +377,15 @@ def preflight():
         warnings.append("Profil AMD selectionne mais GPU NVIDIA detecte — risque de conflit.")
     if "nvidia" in slugs and gpu == "amd":
         warnings.append("Profil NVIDIA selectionne mais GPU AMD detecte — risque de conflit.")
+
+    # Garde RPM Fusion : certains paquets (steam, vlc, kodi...) n'existent pas
+    # dans Fedora vanilla. Si presents et RPM Fusion inactif -> avertir.
+    rpmfusion_needed = sorted(p for p in to_install_apt if p in _RPMFUSION_ONLY)
+    if rpmfusion_needed and not _rpmfusion_status()["enabled"]:
+        warnings.append(
+            "Paquets RPM Fusion requis (" + ", ".join(rpmfusion_needed) + ") : "
+            "activez RPM Fusion via le wizard Fedora avant l'installation, sinon ils echoueront."
+        )
 
     return jsonify({
         "success": True,

@@ -2,13 +2,12 @@
   "packages": [
     { "name": "meld", "description": "Visual diff and merge tool" },
     { "name": "flameshot", "description": "Powerful screenshot utility" },
-    { "name": "mpv", "description": "Lightweight media player" },
     { "name": "gparted", "description": "Disk partition editor" },
     { "name": "git", "description": "Version control system" },
     { "name": "ncdu", "description": "Disk usage analyzer with ncurses interface" },
     { "name": "lshw", "description": "Hardware lister utility" },
     { "name": "curl", "description": "Command line data transfer tool" },
-    { "name": "wget", "description": "Network downloader" },
+    { "name": "wget2", "description": "Network downloader (wget2, remplace wget sur Fedora recent)" },
     { "name": "sassc", "description": "SASS compiler" },
     { "name": "fira-code-fonts", "description": "Fira Code programming font" },
     { "name": "dejavu-fonts-all", "description": "DejaVu font family" },
@@ -16,7 +15,7 @@
     { "name": "kvantum", "description": "SVG-based theme engine for Qt" },
     { "name": "kate", "description": "KDE advanced text editor" },
     { "name": "yakuake", "description": "Drop-down terminal emulator" },
-    { "name": "kdeconnect", "description": "Connect phone to KDE desktop" },
+    { "name": "kdeconnectd", "description": "Connect phone to KDE desktop" },
     { "name": "filelight", "description": "Disk usage visualizer" },
     { "name": "papirus-icon-theme", "description": "Papirus icon theme (Linux standard)" }
   ]

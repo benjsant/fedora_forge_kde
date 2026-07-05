@@ -25,7 +25,6 @@
     { "name": "nodejs", "description": "Runtime JavaScript Node.js" },
     { "name": "npm", "description": "Gestionnaire de paquets Node.js" },
     { "name": "gh", "description": "GitHub CLI : PR, issues, releases depuis le terminal" },
-    { "name": "lazygit", "description": "Interface terminal Git ergonomique" },
     { "name": "zoxide", "description": "cd intelligent base sur la frequence des dossiers" }
   ],
   "flatpak": [],

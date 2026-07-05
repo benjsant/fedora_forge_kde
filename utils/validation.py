@@ -7,6 +7,7 @@ from pathlib import Path
 from pydantic import ValidationError
 
 from schemas import (
+    CoprCatalog,
     ExternalPackageList,
     FlatpakList,
     PackageList,
@@ -69,6 +70,9 @@ def validate_external_config(path):
 def validate_theme_config(path):
     return validate_config(path, ThemeList)
 
+def validate_copr_config(path):
+    return validate_config(path, CoprCatalog)
+
 
 def validate_all_configs(config_dir="configs"):
     """Valide tous les fichiers de config du dossier."""
@@ -84,6 +88,7 @@ def validate_all_configs(config_dir="configs"):
         ("themes_icons.json", validate_theme_config),
         ("themes_cursors.json", validate_theme_config),
         ("optional_install.json", validate_install_config),
+        ("copr.json", validate_copr_config),
     ]
 
     for config_file, validator in config_validations:

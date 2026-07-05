@@ -91,6 +91,22 @@ def test_system_tools_launch_rejects_unknown_tool(client):
     assert r.status_code == 404
 
 
+def test_count_failed_services_excludes_vm_artifacts():
+    from routes.legacy import _count_failed_services
+    out = (
+        "mcelog.service loaded failed failed Machine Check Exception Logging Daemon\n"
+        "foo.service loaded failed failed Some Real Failure\n"
+        "\n"
+    )
+    # mcelog ignore, foo compte
+    assert _count_failed_services(out) == 1
+
+
+def test_count_failed_services_empty():
+    from routes.legacy import _count_failed_services
+    assert _count_failed_services("") == 0
+
+
 def test_login_manager_status_returns_shape(client):
     r = client.get("/api/sddm/status")
     assert r.status_code == 200

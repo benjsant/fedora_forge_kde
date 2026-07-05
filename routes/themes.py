@@ -2,7 +2,6 @@
 import json
 import os
 import threading
-from pathlib import Path
 
 from flask import Blueprint, jsonify, request
 
@@ -14,15 +13,16 @@ from routes.shared import (
     task_lock,
     update_task_status,
 )
+from utils.paths import PROJECT_ROOT
 from utils.theme_manager import ThemeManager
 
 bp = Blueprint("themes", __name__)
 
 _CATALOG_FILES = {
-    "gtk":     "configs/themes_gtk.json",
-    "icon":    "configs/themes_icons.json",
-    "cursor":  "configs/themes_cursors.json",
-    "kvantum": "configs/themes_kvantum.json",
+    "gtk":     PROJECT_ROOT / "configs" / "themes_gtk.json",
+    "icon":    PROJECT_ROOT / "configs" / "themes_icons.json",
+    "cursor":  PROJECT_ROOT / "configs" / "themes_cursors.json",
+    "kvantum": PROJECT_ROOT / "configs" / "themes_kvantum.json",
 }
 
 
@@ -31,7 +31,7 @@ def _load_catalog():
     result = {}
     for theme_type, path in _CATALOG_FILES.items():
         try:
-            data = json.loads(Path(path).read_text())
+            data = json.loads(path.read_text())
             entries = []
             for t in data.get("themes", []):
                 installed, _ = tm.is_theme_installed(t.get("name_to_use", t["name"]), theme_type)
@@ -67,7 +67,7 @@ def install_theme():
         return jsonify({"success": False, "error": "type et name requis (gtk|icon|cursor|kvantum)"}), 400
 
     try:
-        raw = json.loads(Path(_CATALOG_FILES[theme_type]).read_text())
+        raw = json.loads(_CATALOG_FILES[theme_type].read_text())
     except Exception:
         return jsonify({"success": False, "error": "Catalogue introuvable"}), 500
 

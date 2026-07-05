@@ -177,13 +177,20 @@ def apply_theme_kde(gtk_theme, icon_theme, cursor_theme):
 # Main
 # ---------------------------------------------------------------------
 def run_all_themes():
-    """Install all themes and apply the first of each category."""
-    themes_data = load_theme_json(CONFIG_DIR / "themes_gtk.json")
-    icons_data = load_theme_json(CONFIG_DIR / "themes_icons.json")
-    cursors_data = load_theme_json(CONFIG_DIR / "themes_cursors.json")
+    """Installe les themes disponibles (telechargement/build) SANS les appliquer.
 
-    if not themes_data or not icons_data or not cursors_data:
-        error("Missing theme configuration files, aborting.")
+    L'application d'un theme est une action explicite de l'utilisateur (catalogue
+    de themes ou config recommandee) : on ne force plus "le premier de chaque
+    categorie" et on ne modifie pas l'ecran de connexion. Le theme par defaut
+    (Breeze) reste en place. `apply_theme_kde` / `apply_login_manager_theme`
+    restent disponibles pour une application explicite ailleurs."""
+    themes_data = load_theme_json(CONFIG_DIR / "themes_gtk.json") or []
+    icons_data = load_theme_json(CONFIG_DIR / "themes_icons.json") or []
+    cursors_data = load_theme_json(CONFIG_DIR / "themes_cursors.json") or []
+
+    total = len(themes_data) + len(icons_data) + len(cursors_data)
+    if total == 0:
+        info("Aucun theme a installer (catalogues vides).")
         return
 
     info("Installing all GTK themes...")
@@ -198,15 +205,8 @@ def run_all_themes():
     for theme in cursors_data:
         install_theme(theme, CURSORS_DIR / theme['name_to_use'])
 
-    # Apply the first theme of each category
-    gtk_name = themes_data[0]['name_to_use']
-    icon_name = icons_data[0]['name_to_use']
-    cursor_name = cursors_data[0]['name_to_use']
-
-    info(f"Applying themes: GTK={gtk_name}, Icons={icon_name}, Cursor={cursor_name}")
-    apply_theme_kde(gtk_name, icon_name, cursor_name)
-    apply_login_manager_theme(gtk_name, icon_name, cursor_name)
-    success("All themes installed and applied.")
+    success(f"{total} theme(s) installe(s) - non appliques "
+            "(choisissez-les dans le catalogue de themes pour les activer).")
 
 
 def main():
