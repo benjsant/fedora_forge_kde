@@ -11,6 +11,42 @@ function loadTweaks() {
     loadZram();
     loadAdminMenu();
     loadDolphin();
+    loadDsTouchpad();
+}
+
+function loadDsTouchpad() {
+    const ctrl = document.getElementById('dsTouchpadControls');
+    if (!ctrl) return;
+    api('/api/tweaks/ds-touchpad')
+        .then(data => {
+            if (!data.success) { ctrl.innerHTML = '<div style="color: var(--text-muted);">Non disponible</div>'; return; }
+            const on = data.rule_installed;
+            const detected = data.controller_present
+                ? '<span style="font-size: 0.82em; color: var(--success);">Manette detectee : ' + esc((data.detected || []).join(', ')) + '</span>'
+                : '<span style="font-size: 0.82em; color: var(--text-muted);">Aucune manette PlayStation branchee (la regle s\'appliquera au prochain branchement)</span>';
+            ctrl.innerHTML =
+                '<div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">' +
+                  '<span style="font-weight: bold; color: ' + (on ? 'var(--success)' : 'var(--text-muted)') + ';">' +
+                    (on ? 'Pave tactile ignore' : 'Pave tactile actif (souris)') + '</span>' +
+                  '<button class="btn-small" id="btnDsTouchpadToggle" onclick="toggleDsTouchpad(' + (on ? 'false' : 'true') + ')" ' +
+                    'style="border-color: ' + (on ? 'var(--danger)' : 'var(--success)') + '; color: ' + (on ? 'var(--danger)' : 'var(--success)') + ';">' +
+                    (on ? 'Reactiver la souris' : 'Ignorer le pave tactile') + '</button>' +
+                '</div>' +
+                '<div style="margin-top: 6px;">' + detected + '</div>';
+        })
+        .catch(() => { ctrl.innerHTML = '<div style="color: var(--text-muted);">Non disponible</div>'; });
+}
+
+function toggleDsTouchpad(enable) {
+    const btn = document.getElementById('btnDsTouchpadToggle');
+    if (btn) { btn.disabled = true; btn.textContent = '...'; }
+    api('/api/tweaks/ds-touchpad/toggle', { body: { enable } })
+        .then(data => {
+            if (data.success) showToast(data.message || 'Pave tactile mis a jour', 'success');
+            else showToast(data.error || 'Erreur', 'error');
+            loadDsTouchpad();
+        })
+        .catch(() => { showToast('Erreur reseau', 'error'); loadDsTouchpad(); });
 }
 
 function loadDolphin() {

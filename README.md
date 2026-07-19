@@ -120,6 +120,8 @@ Auto-detection GPU : le profil oppose (NVIDIA si AMD detecte, et vice versa) est
 - **Services systemd toggleables** : fstrim.timer, bluetooth, cups, sshd, firewalld
 - **Audio PipeWire** : sample rate (44.1/48/96/192 kHz) + codecs BT premium (LDAC/aptX-HD/AAC)
 - **Sysctls gaming** : split_lock_mitigate=0, max_map_count=16M, tcp_mtu_probing=1 (drop-in /etc/sysctl.d/)
+- **Pave tactile manette PlayStation** : detection DualShock 4/DualSense et regle udev pour que le pave tactile ne pilote plus le curseur (equivalent du ds-inhibit de Nobara, sticks/boutons intacts en jeu)
+- **Durcissement pare-feu** : ferme la plage 1025-65535 TCP/UDP que la zone FedoraWorkstation ouvre par defaut (services de dev, Docker, Portainer... ne sont plus exposes au reseau local). Reversible
 
 ### Diagnostic & monitoring
 - **Panneau "Identite systeme"** : kernel, stack graphique (Mesa/Plasma), LSM, etat SELinux, sysctls gaming, btrfs, zram

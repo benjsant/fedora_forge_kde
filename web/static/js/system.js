@@ -155,6 +155,45 @@ function loadFirewall() {
         .catch(() => {
             document.getElementById('firewallStatus').textContent = 'Non disponible';
         });
+    loadFirewallHarden();
+}
+
+function loadFirewallHarden() {
+    const ctrl = document.getElementById('firewallHardenControls');
+    if (!ctrl) return;
+    api('/api/system/firewall/harden')
+        .then(data => {
+            if (!data.success || !data.available) {
+                ctrl.innerHTML = '<div style="font-size: 0.85em; color: var(--text-muted);">firewalld inactif ou zone introuvable : indisponible.</div>';
+                return;
+            }
+            const on = data.hardened;
+            const detail = on
+                ? '<span style="font-size: 0.82em; color: var(--text-muted);">Zone ' + esc(data.zone) + ' : plage fermee</span>'
+                : '<span style="font-size: 0.82em; color: var(--warning, orange);">Zone ' + esc(data.zone) + ' : ' + esc((data.open_ranges || []).join(' + ')) + ' encore ouvert(s)</span>';
+            ctrl.innerHTML =
+                '<div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">' +
+                  '<span style="font-weight: bold; color: ' + (on ? 'var(--success)' : 'var(--danger)') + ';">' +
+                    (on ? 'Durci' : 'Plage ouverte') + '</span>' +
+                  '<button class="btn-small" id="btnFirewallHarden" onclick="toggleFirewallHarden(' + (on ? 'false' : 'true') + ')" ' +
+                    'style="border-color: ' + (on ? 'var(--danger)' : 'var(--success)') + '; color: ' + (on ? 'var(--danger)' : 'var(--success)') + ';">' +
+                    (on ? 'Restaurer le defaut Fedora' : 'Fermer la plage') + '</button>' +
+                '</div>' +
+                '<div style="margin-top: 6px;">' + detail + '</div>';
+        })
+        .catch(() => { ctrl.innerHTML = '<div style="color: var(--text-muted);">Non disponible</div>'; });
+}
+
+function toggleFirewallHarden(enable) {
+    const btn = document.getElementById('btnFirewallHarden');
+    if (btn) { btn.disabled = true; btn.textContent = '...'; }
+    api('/api/system/firewall/harden/toggle', { body: { enable } })
+        .then(data => {
+            if (data.success) showToast(data.message || 'Pare-feu mis a jour', 'success');
+            else showToast(data.error || 'Erreur', 'error');
+            loadFirewall();
+        })
+        .catch(() => { showToast('Erreur reseau', 'error'); loadFirewall(); });
 }
 
 function firewallEnable() {

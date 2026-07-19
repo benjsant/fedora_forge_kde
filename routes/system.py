@@ -4,7 +4,7 @@ import subprocess
 import threading
 import time
 
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 
 from routes.shared import (
     SCRIPT_TIMEOUT,
@@ -13,6 +13,9 @@ from routes.shared import (
     log_success,
     start_background_task,
 )
+from utils.firewall_tweaks import apply as fw_harden_apply
+from utils.firewall_tweaks import remove as fw_harden_remove
+from utils.firewall_tweaks import status as fw_harden_status
 
 bp = Blueprint("system", __name__)
 
@@ -146,6 +149,25 @@ def firewall_enable():
     if r.returncode != 0:
         return jsonify({"success": False, "error": r.stderr.strip() or "Echec activation"}), 500
     return jsonify({"success": True, "message": "Pare-feu active"})
+
+
+@bp.route('/api/system/firewall/harden')
+def firewall_harden():
+    """Etat du durcissement (plage 1025-65535 de la zone par defaut)."""
+    return jsonify({"success": True, **fw_harden_status()})
+
+
+@bp.route('/api/system/firewall/harden/toggle', methods=['POST'])
+def firewall_harden_toggle():
+    data = request.get_json(silent=True) or {}
+    enable = bool(data.get("enable", False))
+    ok, msg = fw_harden_apply() if enable else fw_harden_remove()
+    if not ok:
+        log_error(f"Durcissement pare-feu : {msg}")
+        return jsonify({"success": False, "error": msg}), 500
+    log_success(msg)
+    return jsonify({"success": True, "hardened": enable, "message": msg,
+                    **fw_harden_status()})
 
 
 @bp.route('/api/system/firewall/disable', methods=['POST'])

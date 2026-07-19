@@ -16,6 +16,9 @@ from utils.audio_tweaks import (
 )
 from utils.dolphin_tweaks import set_home_on_startup as dolphin_set_home
 from utils.dolphin_tweaks import status as dolphin_status
+from utils.ds_touchpad import apply as ds_touchpad_apply
+from utils.ds_touchpad import remove as ds_touchpad_remove
+from utils.ds_touchpad import status as ds_touchpad_status
 from utils.panel_tweaks import set_floating as panel_set_floating
 from utils.panel_tweaks import status as panel_status
 from utils.plasma_tweaks import clear_caches, reset_plasmashell
@@ -240,6 +243,26 @@ def dolphin_home_startup():
         return jsonify({"success": False, "error": msg}), 500
     log_success(msg)
     return jsonify({"success": True, "enabled": enable, "message": msg, **dolphin_status()})
+
+
+# --------- Manettes PlayStation : pave tactile comme souris ---------
+
+@bp.route('/api/tweaks/ds-touchpad')
+def ds_touchpad():
+    return jsonify({"success": True, **ds_touchpad_status()})
+
+
+@bp.route('/api/tweaks/ds-touchpad/toggle', methods=['POST'])
+def ds_touchpad_toggle():
+    data = request.get_json(silent=True) or {}
+    enable = bool(data.get("enable", False))
+    ok, msg = ds_touchpad_apply() if enable else ds_touchpad_remove()
+    if not ok:
+        log_error(f"Pave tactile manette : {msg}")
+        return jsonify({"success": False, "error": msg}), 500
+    log_success(msg)
+    return jsonify({"success": True, "ignored": enable, "message": msg,
+                    **ds_touchpad_status()})
 
 
 # --------- Memoire : zram facon Nobara (zstd + swappiness) ---------

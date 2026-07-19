@@ -356,6 +356,17 @@
                 </div>
             </div>
 
+            <!-- Manettes PlayStation : pave tactile comme souris -->
+            <div style="margin-top: 22px;">
+                <h3 style="color: var(--primary); margin-bottom: 6px; font-size: 1em;">Manette PlayStation : pave tactile</h3>
+                <p style="font-size: 0.85em; color: var(--text-muted); margin-bottom: 10px;">
+                    Le pave tactile des DualShock 4 / DualSense agit comme une souris : manette posee, le curseur saute et clique tout seul (Nobara a ds-inhibit, Fedora vanilla n'a rien). Depose une regle udev pour que libinput l'ignore - sticks, boutons et pave restent visibles des jeux. Reversible.
+                </p>
+                <div id="dsTouchpadControls">
+                    <div style="color: var(--text-muted);">Chargement...</div>
+                </div>
+            </div>
+
             <!-- Barre des taches : flottante / fixe -->
             <div style="margin-top: 22px;">
                 <h3 style="color: var(--primary); margin-bottom: 6px; font-size: 1em;">Barre des taches (panneau)</h3>
@@ -486,6 +497,15 @@
                         style="border-color: var(--success); color: var(--success);">Activer</button>
                 <button class="btn-small" id="btnFirewallDisable" onclick="firewallDisable()"
                         style="border-color: var(--danger); color: var(--danger);">Desactiver</button>
+            </div>
+            <div style="margin-bottom: 12px;">
+                <h3 style="color: var(--primary); margin-bottom: 6px; font-size: 1em;">Durcissement : fermer la plage 1025-65535</h3>
+                <p style="font-size: 0.85em; color: var(--text-muted); margin-bottom: 10px;">
+                    Par defaut, la zone FedoraWorkstation ouvre <strong>tous les ports 1025-65535</strong> (TCP + UDP) : vos serveurs de dev, bases Docker ou Portainer sont joignables depuis tout le reseau local. Ce tweak ferme la plage (permanent + runtime). Reversible.
+                </p>
+                <div id="firewallHardenControls">
+                    <div style="color: var(--text-muted);">Chargement...</div>
+                </div>
             </div>
             <pre id="firewallOutput"
                  style="font-size: 0.78em; color: var(--text-muted); background: var(--light);
